@@ -8,7 +8,7 @@ async function geocodeAddress(address) {
   return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
 }
 
-async function extractFlyerInfo(imageBase64) {
+async function extractFlyerInfo(imageBase64, mediaType = "image/jpeg") {
   const response = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -18,7 +18,7 @@ async function extractFlyerInfo(imageBase64) {
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
           { type: 'text', text: `Extract car meet event info from this flyer. Return ONLY a JSON object with these fields (no markdown, no explanation):
 {
   "title": "event name",
@@ -75,13 +75,14 @@ export default function PostEventModal({ user, onClose, onPosted }) {
     if (!file) return
     setScanning(true); setError(''); setFlyerSuccess(false)
     try {
+      const mediaType = file.type || 'image/jpeg'
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result.split(',')[1])
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
-      const info = await extractFlyerInfo(base64)
+      const info = await extractFlyerInfo(base64, mediaType)
       setForm(prev => ({
         ...prev,
         title: info.title || prev.title,
