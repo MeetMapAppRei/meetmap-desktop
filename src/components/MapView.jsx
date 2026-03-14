@@ -40,12 +40,12 @@ export default function MapView({ events, selectedEvent, hoveredEvent, onEventCl
         box-shadow: 0 0 0 0 ${color}44;
       `
       el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.5)'
-        el.style.boxShadow = `0 0 0 6px ${color}33`
+        el.style.boxShadow = `0 0 0 6px ${color}55`
+        el.style.background = '#FFFFFF'
       })
       el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)'
         el.style.boxShadow = `0 0 0 0 ${color}44`
+        el.style.background = color
       })
       el.addEventListener('click', () => onEventClick(event))
 
