@@ -54,12 +54,11 @@ export default function MapView({ events, selectedEvent, hoveredEvent, onEventCl
     })
   }, [events])
 
-  // Fly to selected/hovered
+  // Only fly to selected event (not hovered — causes pins to fly away)
   useEffect(() => {
-    const event = selectedEvent || hoveredEvent
-    if (!event?.lat || !event?.lng || !mapInstance.current) return
-    mapInstance.current.flyTo({ center: [event.lng, event.lat], zoom: 13, speed: 1.2 })
-  }, [selectedEvent, hoveredEvent])
+    if (!selectedEvent?.lat || !selectedEvent?.lng || !mapInstance.current) return
+    mapInstance.current.flyTo({ center: [selectedEvent.lng, selectedEvent.lat], zoom: 13, speed: 1.2 })
+  }, [selectedEvent])
 
   useEffect(() => {
     if (!centerOn || !mapInstance.current) return
