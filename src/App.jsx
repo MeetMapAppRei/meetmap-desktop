@@ -9,6 +9,14 @@ import AuthModal from './components/AuthModal'
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
 export default function App() {
+  // Redirect mobile users to the mobile app
+  useEffect(() => {
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent)
+    if (isMobile) {
+      window.location.href = 'https://meetmap-gilt.vercel.app'
+    }
+  }, [])
+
   const [user, setUser] = useState(null)
   const [events, setEvents] = useState([])
   const [filtered, setFiltered] = useState([])
