@@ -9,7 +9,7 @@ async function geocodeAddress(address) {
 }
 
 async function extractFlyerInfo(imageBase64) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
