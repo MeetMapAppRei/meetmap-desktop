@@ -51,7 +51,7 @@ export default function App() {
   const loadEvents = async () => {
     setLoading(true)
     try {
-      const data = await fetchEvents({ showPast })
+      const data = await fetchEvents({ showPast, type: typeFilter, search })
       setEvents(data || [])
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
