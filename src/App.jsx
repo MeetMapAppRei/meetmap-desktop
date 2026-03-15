@@ -9,10 +9,11 @@ import AuthModal from './components/AuthModal'
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
 export default function App() {
-  // Redirect mobile users to the mobile app
+  // Redirect mobile users to the mobile app (only if not already on the mobile site)
   useEffect(() => {
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent)
-    if (isMobile) {
+    const isMobileSite = window.location.hostname === 'meetmap-gilt.vercel.app'
+    if (isMobile && !isMobileSite) {
       window.location.href = 'https://meetmap-gilt.vercel.app'
     }
   }, [])
@@ -33,9 +34,13 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null))
-    loadEvents()
     return () => subscription.unsubscribe()
   }, [])
+
+  // Reload events whenever showPast or typeFilter changes
+  useEffect(() => {
+    loadEvents()
+  }, [showPast, typeFilter])
 
   useEffect(() => {
     let result = events
