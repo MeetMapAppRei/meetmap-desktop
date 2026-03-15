@@ -20,6 +20,12 @@ export const fetchEvents = async (filters = {}) => {
     .order('date', { ascending: true })
   if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
   if (filters.search) query = query.or(`title.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
+  // Hide past events by default unless showPast is true
+  if (!filters.showPast) {
+    const today = new Date().toISOString().split('T')[0]
+    query = query.gte('date', today)
+  }
+
   const { data, error } = await query
   if (error) throw error
   return data

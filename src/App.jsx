@@ -26,6 +26,7 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [showPast, setShowPast] = useState(false)
   const [loading, setLoading] = useState(true)
   const [mapCenter, setMapCenter] = useState(null)
 
@@ -50,7 +51,7 @@ export default function App() {
   const loadEvents = async () => {
     setLoading(true)
     try {
-      const data = await fetchEvents()
+      const data = await fetchEvents({ showPast })
       setEvents(data || [])
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -128,6 +129,21 @@ export default function App() {
             >{t === 'all' ? 'All Events' : t}</button>
           ))}
         </div>
+
+        {/* Past events toggle */}
+        <button
+          onClick={() => setShowPast(p => !p)}
+          style={{
+            padding: '5px 14px', borderRadius: 20, border: '1px solid',
+            borderColor: showPast ? '#444' : '#1A1A1A',
+            background: showPast ? '#222' : 'transparent',
+            color: showPast ? '#aaa' : '#444',
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {showPast ? '✓ Past Events' : 'Past Events'}
+        </button>
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
