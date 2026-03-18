@@ -1,6 +1,9 @@
+import { useTheme } from '../lib/ThemeContext'
+
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
 export default function EventPanel({ events, loading, selectedEvent, onEventClick, onHover }) {
+  const { isLight } = useTheme()
   const today = new Date().toISOString().split('T')[0]
   const upcoming = events.filter(e => e.date >= today)
   const past = events.filter(e => e.date < today)
@@ -22,8 +25,8 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
         onMouseEnter={() => onHover(event)}
         onMouseLeave={() => onHover(null)}
         style={{
-          padding: '14px 16px', cursor: 'pointer', borderBottom: '1px solid #141414',
-          background: isSelected ? '#141414' : 'transparent',
+          padding: '14px 16px', cursor: 'pointer', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}`,
+          background: isSelected ? (isLight ? '#F2F2F2' : '#141414') : 'transparent',
           borderLeft: isSelected ? `3px solid ${color}` : '3px solid transparent',
           transition: 'all 0.15s', opacity: isPast ? 0.5 : 1,
         }}
@@ -62,7 +65,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
             }}>{event.title}</div>
 
             {/* Location */}
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#555', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#555' : '#555', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               📍 {event.address || `${event.location} · ${event.city}`}
             </div>
 
@@ -72,7 +75,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
                 {formatDate(event.date)}{event.time ? ` · ${event.time}` : ''}
               </span>
               {attendeeCount > 0 && (
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#444' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#444' : '#444' }}>
                   {attendeeCount} going
                 </span>
               )}
@@ -90,7 +93,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
   )
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#1A1A1A #0D0D0D' }}>
+    <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: isLight ? '#E5E5E5 #FFFFFF' : '#1A1A1A #0D0D0D' }}>
       {events.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🚗</div>
@@ -101,7 +104,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
         <>
           {upcoming.length > 0 && (
             <>
-              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: '#333', letterSpacing: 2, textTransform: 'uppercase', borderBottom: '1px solid #141414' }}>
+              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: '#333', letterSpacing: 2, textTransform: 'uppercase', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}` }}>
                 Upcoming · {upcoming.length}
               </div>
               {upcoming.map(e => <EventCard key={e.id} event={e} />)}
@@ -109,7 +112,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
           )}
           {past.length > 0 && (
             <>
-              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: '#333', letterSpacing: 2, textTransform: 'uppercase', borderBottom: '1px solid #141414' }}>
+              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: '#333', letterSpacing: 2, textTransform: 'uppercase', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}` }}>
                 Past · {past.length}
               </div>
               {past.map(e => <EventCard key={e.id} event={e} />)}

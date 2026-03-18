@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, fetchEvents, signIn, signUp, signOut } from './lib/supabase'
+import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
 import PostEventModal from './components/PostEventModal'
@@ -8,7 +9,7 @@ import AuthModal from './components/AuthModal'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
-export default function App() {
+function AppInner() {
   // Redirect mobile users to the mobile app (only if not already on the mobile site)
   useEffect(() => {
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent)
@@ -17,6 +18,8 @@ export default function App() {
       window.location.href = 'https://meetmap-gilt.vercel.app'
     }
   }, [])
+
+  const { isLight, toggleTheme } = useTheme()
 
   const [user, setUser] = useState(null)
   const [events, setEvents] = useState([])
@@ -131,11 +134,11 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0A0A0A', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: isLight ? '#F6F6F6' : '#0A0A0A', overflow: 'hidden' }}>
 
       {/* TOP NAV */}
       <nav style={{
-        height: 58, background: '#0D0D0D', borderBottom: '1px solid #1A1A1A',
+        height: 58, background: isLight ? '#FFFFFF' : '#0D0D0D', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
         display: 'flex', alignItems: 'center', padding: '0 24px', gap: 24,
         flexShrink: 0, zIndex: 100,
       }}>
@@ -144,7 +147,7 @@ export default function App() {
           <span style={{ fontSize: 22 }}>🚗</span>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, letterSpacing: 3 }}>
             <span style={{ color: '#FF6B35' }}>MEET</span>
-            <span style={{ color: '#F0F0F0' }}> MAP</span>
+            <span style={{ color: isLight ? '#111' : '#F0F0F0' }}> MAP</span>
           </div>
         </div>
 
@@ -155,18 +158,38 @@ export default function App() {
 
         {/* Search */}
         <div style={{ flex: 1, maxWidth: 360, position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#444' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: isLight ? '#444' : '#444' }}>🔍</span>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search events, city, tags..."
             style={{
-              width: '100%', background: '#141414', border: '1px solid #1E1E1E',
-              borderRadius: 8, padding: '8px 12px 8px 34px', color: '#F0F0F0',
+              width: '100%', background: isLight ? '#FFFFFF' : '#141414', border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+              borderRadius: 8, padding: '8px 12px 8px 34px', color: isLight ? '#222' : '#F0F0F0',
               fontSize: 13, outline: 'none',
             }}
           />
         </div>
+
+        {/* Light/Dark toggle */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: isLight ? '#FFFFFF' : 'none',
+            border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+            color: isLight ? '#444' : '#555',
+            borderRadius: 10,
+            padding: '8px 12px',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            fontWeight: 800,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: 0.3,
+          }}
+        >
+          {isLight ? 'Light' : 'Dark'}
+        </button>
 
         {/* Type filters */}
         <div style={{ display: 'flex', gap: 6 }}>
@@ -284,7 +307,7 @@ export default function App() {
 
         {/* EVENT PANEL — right sidebar */}
         <div style={{
-          width: 380, background: '#0D0D0D', borderLeft: '1px solid #1A1A1A',
+          width: 380, background: isLight ? '#FFFFFF' : '#0D0D0D', borderLeft: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
         }}>
           <EventPanel
@@ -322,5 +345,13 @@ export default function App() {
         />
       )}
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   )
 }

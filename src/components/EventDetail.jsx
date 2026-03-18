@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase, fetchComments, postComment, toggleAttendance, getAttendanceStatus, updateEvent, uploadEventPhoto } from '../lib/supabase'
+import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
@@ -177,10 +178,27 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
 
+  const { isLight } = useTheme()
+
   const color = TYPE_COLORS[event.type] || '#FF6B35'
   const isOwner = user && event.user_id === user.id
   const today = new Date().toISOString().split('T')[0]
   const isPast = event.date < today
+
+  const overlayBg = isLight ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.85)'
+  const panelBg = isLight ? '#FFFFFF' : '#0F0F0F'
+  const panelBorder = isLight ? '#E5E5E5' : '#1A1A1A'
+  const muted = isLight ? '#666' : '#888'
+  const muted2 = isLight ? '#666' : '#777'
+  const divider = isLight ? '#E5E5E5' : '#141414'
+  const closeBg = isLight ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.7)'
+  const closeColor = isLight ? '#333' : '#fff'
+  const inputBg = isLight ? '#FFFFFF' : '#141414'
+  const inputBorder = isLight ? '#E5E5E5' : '#1E1E1E'
+  const inputText = isLight ? '#222' : '#F0F0F0'
+  const shareBg = isLight ? '#F2F2F2' : '#141414'
+  const shareBorder = isLight ? '#E5E5E5' : '#222'
+  const shareText = isLight ? '#666' : '#888'
 
   useEffect(() => {
     fetchComments(event.id).then(setComments).catch(console.error)
@@ -239,16 +257,16 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
 
       <div
         onClick={e => e.target === e.currentTarget && onClose()}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        style={{ position: 'fixed', inset: 0, background: overlayBg, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       >
-        <div style={{ width: '100%', maxWidth: 720, background: '#0F0F0F', borderRadius: 16, border: '1px solid #1A1A1A', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '100%', maxWidth: 720, background: panelBg, borderRadius: 16, border: `1px solid ${panelBorder}`, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
 
           {/* Hero */}
           <div style={{ position: 'relative', height: event.photo_url ? 260 : 'auto' }}>
             {event.photo_url && <img src={event.photo_url} style={{ width: '100%', height: 260, objectFit: 'cover' }} alt="" />}
-            {event.photo_url && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F0F0F 0%, transparent 50%)' }} />}
+            {event.photo_url && <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, ${isLight ? '#FFFFFF' : '#0F0F0F'} 0%, transparent 50%)` }} />}
             <div style={{ height: 4, background: color }} />
-            <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', fontSize: 20, width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: closeBg, border: 'none', color: closeColor, fontSize: 20, width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex' }}>
@@ -257,9 +275,9 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
               <span style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color, background: color + '22', padding: '3px 10px', borderRadius: 20, textTransform: 'capitalize' }}>{event.type}</span>
               <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 2, marginTop: 10, marginBottom: 8, lineHeight: 1 }}>{event.title}</h1>
 
-              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: '#888', marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
+              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted, marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${event.time}` : ''}</div>
-              {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: '#666', marginBottom: 14 }}>🎤 Hosted by <span style={{ color: '#aaa' }}>{event.host}</span></div>}
+              {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: muted, marginBottom: 14 }}>🎤 Hosted by <span style={{ color: isLight ? '#888' : '#aaa' }}>{event.host}</span></div>}
 
               {event.tags?.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
@@ -267,7 +285,7 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
                 </div>
               )}
 
-              {event.description && <p style={{ fontFamily: "'DM Sans'", fontSize: 14, color: '#777', lineHeight: 1.7, marginBottom: 20 }}>{event.description}</p>}
+              {event.description && <p style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted2, lineHeight: 1.7, marginBottom: 20 }}>{event.description}</p>}
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -276,7 +294,7 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
                     {attending ? `✓ YOU'RE GOING · ${attendeeCount}` : `I'M IN · ${attendeeCount} GOING`}
                   </button>
                 )}
-                <button onClick={handleShare} style={{ flex: 1, background: '#141414', color: copied ? '#7CFF6B' : '#888', border: '1px solid #222', borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 15, cursor: 'pointer' }}>
+                <button onClick={handleShare} style={{ flex: 1, background: shareBg, color: copied ? '#7CFF6B' : shareText, border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 15, cursor: 'pointer' }}>
                   {copied ? '✓ COPIED!' : '🔗 SHARE'}
                 </button>
               </div>
@@ -286,14 +304,14 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
                 <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
                   <button
                     onClick={() => setEditing(true)}
-                    style={{ flex: 1, background: '#141414', color: '#888', border: '1px solid #222', borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
+                    style={{ flex: 1, background: shareBg, color: isLight ? '#666' : '#888', border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
                   >
                     ✏️ EDIT EVENT
                   </button>
                   {!confirmDelete ? (
                     <button
                       onClick={() => setConfirmDelete(true)}
-                      style={{ flex: 1, background: 'transparent', color: '#444', border: '1px solid #1A1A1A', borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
+                      style={{ flex: 1, background: 'transparent', color: isLight ? '#444' : '#444', border: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`, borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
                     >
                       🗑 DELETE
                     </button>
@@ -311,32 +329,32 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
             </div>
 
             {/* Right — comments */}
-            <div style={{ width: 280, borderLeft: '1px solid #141414', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '20px 16px 12px', fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2, color: '#444', borderBottom: '1px solid #141414' }}>
+            <div style={{ width: 280, borderLeft: `1px solid ${divider}`, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '20px 16px 12px', fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2, color: isLight ? '#444' : '#444', borderBottom: `1px solid ${divider}` }}>
                 COMMENTS <span style={{ color }}>{comments.length || ''}</span>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-                {comments.length === 0 && <div style={{ color: '#333', fontSize: 13, fontFamily: "'DM Sans'", textAlign: 'center', paddingTop: 20 }}>No comments yet</div>}
+                {comments.length === 0 && <div style={{ color: isLight ? '#555' : '#333', fontSize: 13, fontFamily: "'DM Sans'", textAlign: 'center', paddingTop: 20 }}>No comments yet</div>}
                 {comments.map(c => (
                   <div key={c.id} style={{ marginBottom: 14 }}>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 4, alignItems: 'center' }}>
                       <div style={{ width: 24, height: 24, borderRadius: '50%', background: color + '33', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue'", fontSize: 12, color, flexShrink: 0 }}>
                         {(c.profiles?.username || 'U')[0].toUpperCase()}
                       </div>
-                      <span style={{ fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 600, color: '#aaa' }}>{c.profiles?.username || 'Anonymous'}</span>
+                      <span style={{ fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 600, color: isLight ? '#666' : '#aaa' }}>{c.profiles?.username || 'Anonymous'}</span>
                     </div>
-                    <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: '#666', paddingLeft: 32, lineHeight: 1.5 }}>{c.text}</div>
+                    <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: isLight ? '#555' : '#666', paddingLeft: 32, lineHeight: 1.5 }}>{c.text}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '12px 16px', borderTop: '1px solid #141414', display: 'flex', gap: 8 }}>
+              <div style={{ padding: '12px 16px', borderTop: `1px solid ${divider}`, display: 'flex', gap: 8 }}>
                 <input
                   placeholder={user ? 'Add comment...' : 'Log in to comment'}
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleComment()}
                   disabled={!user}
-                  style={{ flex: 1, background: '#141414', border: '1px solid #1E1E1E', borderRadius: 6, padding: '8px 10px', color: '#F0F0F0', fontSize: 12, outline: 'none' }}
+                  style={{ flex: 1, background: inputBg, border: `1px solid ${inputBorder}`, borderRadius: 6, padding: '8px 10px', color: inputText, fontSize: 12, outline: 'none' }}
                 />
                 <button onClick={user ? handleComment : onAuthNeeded} disabled={posting} style={{ background: color, color: '#0A0A0A', border: 'none', borderRadius: 6, padding: '0 12px', fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer' }}>
                   {posting ? '...' : 'POST'}
