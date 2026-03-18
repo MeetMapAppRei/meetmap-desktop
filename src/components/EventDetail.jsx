@@ -165,7 +165,7 @@ function EditModal({ event, user, onSaved, onCancel }) {
   )
 }
 
-export default function EventDetail({ event: initialEvent, user, onClose, onAuthNeeded, onDeleted }) {
+export default function EventDetail({ event: initialEvent, user, onClose, onAuthNeeded, onDeleted, onUpdated }) {
   const [event, setEvent] = useState(initialEvent)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
@@ -228,7 +228,11 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
         <EditModal
           event={event}
           user={user}
-          onSaved={(updated) => { setEvent(updated); setEditing(false) }}
+          onSaved={(updated) => {
+            setEvent(updated)
+            setEditing(false)
+            onUpdated?.(updated)
+          }}
           onCancel={() => setEditing(false)}
         />
       )}
@@ -253,7 +257,7 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
               <span style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color, background: color + '22', padding: '3px 10px', borderRadius: 20, textTransform: 'capitalize' }}>{event.type}</span>
               <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 2, marginTop: 10, marginBottom: 8, lineHeight: 1 }}>{event.title}</h1>
 
-              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: '#888', marginBottom: 6 }}>📍 {event.location} · {event.city}</div>
+              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: '#888', marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${event.time}` : ''}</div>
               {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: '#666', marginBottom: 14 }}>🎤 Hosted by <span style={{ color: '#aaa' }}>{event.host}</span></div>}
 

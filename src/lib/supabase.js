@@ -16,7 +16,8 @@ export const signOut = () => supabase.auth.signOut()
 export const fetchEvents = async (filters = {}) => {
   let query = supabase
     .from('events')
-    .select('*, profiles(username, avatar_url), event_attendees(count)')
+    // Explicitly include `address` so the UI can always display the full street address.
+    .select('id, user_id, title, type, date, time, location, city, address, lat, lng, description, tags, host, photo_url, featured, created_at, profiles(username, avatar_url), event_attendees(count)')
     .order('date', { ascending: true })
   if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
   if (filters.search) query = query.or(`title.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
@@ -32,13 +33,21 @@ export const fetchEvents = async (filters = {}) => {
 }
 
 export const createEvent = async (eventData, userId) => {
-  const { data, error } = await supabase.from('events').insert([{ ...eventData, user_id: userId }]).select().single()
+  const { data, error } = await supabase
+    .from('events')
+    .insert([{ ...eventData, user_id: userId }])
+    .select('id, user_id, title, type, date, time, location, city, address, lat, lng, description, tags, host, photo_url, featured, created_at, profiles(username, avatar_url), event_attendees(count)')
+    .single()
   if (error) throw error
   return data
 }
 
 export const updateEvent = async (eventId, updates) => {
-  const { data, error } = await supabase.from('events').update(updates).eq('id', eventId).select().single()
+  const { data, error } = await supabase.from('events')
+    .update(updates)
+    .eq('id', eventId)
+    .select('id, user_id, title, type, date, time, location, city, address, lat, lng, description, tags, host, photo_url, featured, created_at, profiles(username, avatar_url), event_attendees(count)')
+    .single()
   if (error) throw error
   return data
 }

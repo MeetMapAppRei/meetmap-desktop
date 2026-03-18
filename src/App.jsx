@@ -72,6 +72,12 @@ export default function App() {
     setSelectedEvent(null)
   }
 
+  const handleEventUpdated = (updatedEvent) => {
+    if (!updatedEvent) return
+    setEvents(prev => prev.map(e => (e.id === updatedEvent.id ? updatedEvent : e)))
+    setSelectedEvent(updatedEvent)
+  }
+
   const handleEventClick = (event) => {
     setSelectedEvent(event)
     if (event.lat && event.lng) setMapCenter({ lat: event.lat, lng: event.lng })
@@ -214,6 +220,7 @@ export default function App() {
           onClose={() => setSelectedEvent(null)}
           onAuthNeeded={() => setShowAuth(true)}
           onDeleted={handleEventDeleted}
+          onUpdated={handleEventUpdated}
         />
       )}
       {showPost && (

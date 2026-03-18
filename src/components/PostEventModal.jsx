@@ -124,7 +124,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
       let finalCoords = coords
       if (form.address && !finalCoords) finalCoords = await geocodeAddress(form.address).catch(() => null)
       const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
-      const payload = { title: form.title, type: form.type, date: form.date, time: form.time, location: form.location, city: form.city, description: form.description, tags, host: form.host, lat: finalCoords?.lat || null, lng: finalCoords?.lng || null, user_id: user.id }
+      const payload = { title: form.title, type: form.type, date: form.date, time: form.time, location: form.location, city: form.city, address: form.address, description: form.description, tags, host: form.host, lat: finalCoords?.lat || null, lng: finalCoords?.lng || null, user_id: user.id }
       const created = await createEvent(payload, user.id)
       if (photo) {
         const url = await uploadEventPhoto(photo, created.id)

@@ -57,7 +57,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
 
             {/* Location */}
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#555', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              📍 {event.location} · {event.city}
+              📍 {event.address || `${event.location} · ${event.city}`}
             </div>
 
             {/* Date + attendees */}
