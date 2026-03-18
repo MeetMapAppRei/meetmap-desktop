@@ -170,7 +170,43 @@ export default function App() {
 
         {/* Type filters */}
         <div style={{ display: 'flex', gap: 6 }}>
-          {['all', 'meet', 'car show', 'track day', 'cruise'].map(t => (
+          {/* All Events */}
+          <button
+            onClick={() => setTypeFilter('all')}
+            style={{
+              padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+              textTransform: 'capitalize', letterSpacing: 0.3,
+              background: typeFilter === 'all' ? (TYPE_COLORS.all || '#FF6B35') : '#141414',
+              color: typeFilter === 'all' ? '#0A0A0A' : '#555',
+              transition: 'all 0.15s',
+            }}
+          >
+            All Events
+          </button>
+
+          {/* Near Me (next to All Events) */}
+          <button
+            onClick={() => {
+              if (nearMeOnly) setNearMeOnly(false)
+              else requestNearMe()
+            }}
+            style={{
+              padding: '5px 14px', borderRadius: 20, border: '1px solid',
+              borderColor: nearMeOnly ? '#FF6B35' : '#1E1E1E',
+              background: nearMeOnly ? '#222' : '#141414',
+              cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+              color: nearMeOnly ? '#aaa' : '#555',
+              textTransform: 'uppercase',
+              letterSpacing: 0.3,
+              transition: 'all 0.15s',
+            }}
+          >
+            {nearMeOnly ? '✓ Near Me' : 'Near Me'}
+          </button>
+
+          {['meet', 'car show', 'track day', 'cruise'].map(t => (
             <button
               key={t}
               onClick={() => setTypeFilter(t)}
@@ -182,7 +218,9 @@ export default function App() {
                 color: typeFilter === t ? '#0A0A0A' : '#555',
                 transition: 'all 0.15s',
               }}
-            >{t === 'all' ? 'All Events' : t}</button>
+            >
+              {t}
+            </button>
           ))}
         </div>
 
@@ -201,25 +239,7 @@ export default function App() {
           {showPast ? '✓ Past Events' : 'Past Events'}
         </button>
 
-        {/* Near Me */}
-        <button
-          onClick={() => {
-            if (nearMeOnly) setNearMeOnly(false)
-            else requestNearMe()
-          }}
-          style={{
-            padding: '5px 14px', borderRadius: 20, border: '1px solid',
-            borderColor: nearMeOnly ? '#FF6B35' : '#1A1A1A',
-            background: nearMeOnly ? '#222' : 'transparent',
-            color: nearMeOnly ? '#aaa' : '#444',
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.15s',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}
-        >
-          {nearMeOnly ? '✓ Near Me' : 'Near Me'}
-        </button>
+        {/* spacer */}
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
