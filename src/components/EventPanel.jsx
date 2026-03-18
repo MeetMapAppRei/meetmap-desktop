@@ -36,7 +36,13 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {event.photo_url
-              ? <img src={event.photo_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+              ? <img
+                  src={event.photo_url}
+                  loading="lazy"
+                  decoding="async"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  alt=""
+                />
               : <span style={{ fontSize: 28 }}>{event.type === 'meet' ? '🚗' : event.type === 'car show' ? '🏆' : event.type === 'track day' ? '🏁' : '🛣️'}</span>
             }
           </div>
