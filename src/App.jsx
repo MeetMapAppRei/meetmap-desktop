@@ -31,6 +31,11 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [mapCenter, setMapCenter] = useState(null)
 
+  const RADIUS_MILES = 25
+  const [nearMeOnly, setNearMeOnly] = useState(false)
+  const [nearMeCoords, setNearMeCoords] = useState(null)
+  const [nearMeError, setNearMeError] = useState('')
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null))
@@ -83,7 +88,47 @@ export default function App() {
     if (event.lat && event.lng) setMapCenter({ lat: event.lat, lng: event.lng })
   }
 
-  const upcomingCount = events.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
+  const toRad = (deg) => (deg * Math.PI) / 180
+  const distanceMiles = (lat1, lon1, lat2, lon2) => {
+    const R = 3958.8 // Earth radius in miles
+    const dLat = toRad(lat2 - lat1)
+    const dLon = toRad(lon2 - lon1)
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  const eventsForDisplay = nearMeOnly && nearMeCoords
+    ? filtered
+      .filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lng) && distanceMiles(nearMeCoords.lat, nearMeCoords.lng, e.lat, e.lng) <= RADIUS_MILES)
+      .sort((a, b) => (
+        distanceMiles(nearMeCoords.lat, nearMeCoords.lng, a.lat, a.lng) -
+        distanceMiles(nearMeCoords.lat, nearMeCoords.lng, b.lat, b.lng)
+      ))
+    : filtered
+
+  const upcomingCount = eventsForDisplay.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
+
+  const requestNearMe = () => {
+    setNearMeError('')
+    if (!navigator.geolocation) {
+      setNearMeError('Geolocation not supported')
+      setNearMeOnly(false)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setNearMeCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setNearMeOnly(true)
+        setMapCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      },
+      err => {
+        setNearMeError(err.message || 'Could not get location')
+        setNearMeOnly(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0A0A0A', overflow: 'hidden' }}>
@@ -156,6 +201,26 @@ export default function App() {
           {showPast ? '✓ Past Events' : 'Past Events'}
         </button>
 
+        {/* Near Me */}
+        <button
+          onClick={() => {
+            if (nearMeOnly) setNearMeOnly(false)
+            else requestNearMe()
+          }}
+          style={{
+            padding: '5px 14px', borderRadius: 20, border: '1px solid',
+            borderColor: nearMeOnly ? '#FF6B35' : '#1A1A1A',
+            background: nearMeOnly ? '#222' : 'transparent',
+            color: nearMeOnly ? '#aaa' : '#444',
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.15s',
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+          }}
+        >
+          {nearMeOnly ? '✓ Near Me' : 'Near Me'}
+        </button>
+
         {/* Spacer */}
         <div style={{ flex: 1 }} />
 
@@ -189,7 +254,7 @@ export default function App() {
         {/* MAP — left side, takes remaining space */}
         <div style={{ flex: 1, position: 'relative' }}>
           <MapView
-            events={filtered}
+            events={eventsForDisplay}
             selectedEvent={selectedEvent}
             hoveredEvent={hoveredEvent}
             onEventClick={handleEventClick}
@@ -203,7 +268,7 @@ export default function App() {
           display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
         }}>
           <EventPanel
-            events={filtered}
+            events={eventsForDisplay}
             loading={loading}
             selectedEvent={selectedEvent}
             onEventClick={handleEventClick}
