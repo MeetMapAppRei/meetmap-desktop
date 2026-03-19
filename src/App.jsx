@@ -9,6 +9,20 @@ import AuthModal from './components/AuthModal'
 import ImportQueueModal from './components/ImportQueueModal'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
+const parseCsvEnv = (value) =>
+  String(value || '')
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean)
+
+const IMPORT_ADMIN_EMAILS = parseCsvEnv(import.meta.env.VITE_IMPORT_ADMIN_EMAILS).map(v => v.toLowerCase())
+const IMPORT_ADMIN_USER_IDS = parseCsvEnv(import.meta.env.VITE_IMPORT_ADMIN_USER_IDS)
+
+const isImportAdminUser = (user) => {
+  if (!user) return false
+  const email = String(user.email || '').toLowerCase()
+  return IMPORT_ADMIN_EMAILS.includes(email) || IMPORT_ADMIN_USER_IDS.includes(user.id)
+}
 
 function AppInner() {
   // Redirect mobile users to the mobile app (only if not already on the mobile site)
@@ -48,6 +62,7 @@ function AppInner() {
   const [importParams, setImportParams] = useState(null) // { sourceUrl, imageUrl }
   const [importError, setImportError] = useState(null)
   const [importUploading, setImportUploading] = useState(false)
+  const canAccessImports = isImportAdminUser(user)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
@@ -152,7 +167,7 @@ function AppInner() {
   }
 
   const loadPendingImports = async () => {
-    if (!user) return
+    if (!user || !canAccessImports) return
     setImportsLoading(true)
     try {
       const data = await fetchFlyerImports(user.id, 'pending')
@@ -180,18 +195,28 @@ function AppInner() {
 
   useEffect(() => {
     if (!importParams) return
-    if (!user) setShowAuth(true)
-  }, [importParams, user])
+    if (!user) {
+      setShowAuth(true)
+      return
+    }
+    if (!canAccessImports) {
+      setImportParams(null)
+      setImportError(null)
+      setShowImportQueue(false)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [importParams, user, canAccessImports])
 
   useEffect(() => {
     if (!showImportQueue) return
-    if (!user) return
+    if (!user || !canAccessImports) return
     loadPendingImports()
-  }, [showImportQueue, user])
+  }, [showImportQueue, user, canAccessImports])
 
   useEffect(() => {
     if (!importParams) return
     if (!user) return
+    if (!canAccessImports) return
     if (!showImportQueue) return
 
     let cancelled = false
@@ -252,9 +277,10 @@ function AppInner() {
     return () => {
       cancelled = true
     }
-  }, [importParams, user, showImportQueue])
+  }, [importParams, user, canAccessImports, showImportQueue])
 
   const handleUploadFlyer = async (file) => {
+    if (!canAccessImports) return
     if (!file || !importParams?.sourceUrl) return
     setImportUploading(true)
     setImportError(null)
@@ -321,7 +347,7 @@ function AppInner() {
   }
 
   const handleApproveImport = async (imp) => {
-    if (!user || !imp) return
+    if (!canAccessImports || !user || !imp) return
     setApprovingImportId(imp.id)
     try {
       const required = ['title', 'type', 'date', 'location', 'city']
@@ -366,7 +392,7 @@ function AppInner() {
   }
 
   const handleRejectImport = async (imp) => {
-    if (!user || !imp) return
+    if (!canAccessImports || !user || !imp) return
     try {
       await updateFlyerImportStatus(imp.id, 'rejected')
       await loadPendingImports()
@@ -376,7 +402,7 @@ function AppInner() {
   }
 
   const handleUpdateImport = async (importId, nextDraft) => {
-    if (!user || !importId || !nextDraft) return
+    if (!canAccessImports || !user || !importId || !nextDraft) return
     const tags = (nextDraft.tagsText || '')
       .split(',')
       .map(t => t.trim())
@@ -471,28 +497,27 @@ function AppInner() {
         </button>
 
         {/* Imports (flyer queue) */}
-        <button
-          onClick={() => {
-            if (user) setShowImportQueue(true)
-            else setShowAuth(true)
-          }}
-          style={{
-            background: isLight ? '#FFFFFF' : 'none',
-            border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
-            borderRadius: 10,
-            padding: '8px 12px',
-            color: isLight ? '#444' : '#555',
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12,
-            fontWeight: 900,
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: 0.3,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Imports
-        </button>
+        {canAccessImports && (
+          <button
+            onClick={() => setShowImportQueue(true)}
+            style={{
+              background: isLight ? '#FFFFFF' : 'none',
+              border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+              borderRadius: 10,
+              padding: '8px 12px',
+              color: isLight ? '#444' : '#555',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12,
+              fontWeight: 900,
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: 0.3,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Imports
+          </button>
+        )}
 
         {/* Type filters */}
         <div style={{ display: 'flex', gap: 6 }}>
@@ -641,7 +666,7 @@ function AppInner() {
           onPosted={handleEventAdded}
         />
       )}
-      {showImportQueue && (
+      {showImportQueue && canAccessImports && (
         <ImportQueueModal
           imports={imports}
           loading={importsLoading || importProcessing}
