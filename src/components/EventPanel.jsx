@@ -61,21 +61,22 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
             <div style={{
               fontFamily: "'Bebas Neue', sans-serif", fontSize: 17, letterSpacing: 1,
               lineHeight: 1.1, marginTop: 2, marginBottom: 4,
+              color: isLight ? '#1A1A1A' : '#F0F0F0',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>{event.title}</div>
 
             {/* Location */}
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#555' : '#555', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#2C2C2C' : '#B8B8B8', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               📍 {event.address || `${event.location} · ${event.city}`}
             </div>
 
             {/* Date + attendees */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color, fontWeight: 600 }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#D1491A' : color, fontWeight: 700 }}>
                 {formatDate(event.date)}{event.time ? ` · ${event.time}` : ''}
               </span>
               {attendeeCount > 0 && (
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#444' : '#444' }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#2C2C2C' : '#B8B8B8' }}>
                   {attendeeCount} going
                 </span>
               )}
@@ -104,7 +105,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
         <>
           {upcoming.length > 0 && (
             <>
-              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: '#333', letterSpacing: 2, textTransform: 'uppercase', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}` }}>
+              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: isLight ? '#1F1F1F' : '#AFAFAF', letterSpacing: 2, textTransform: 'uppercase', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}` }}>
                 Upcoming · {upcoming.length}
               </div>
               {upcoming.map(e => <EventCard key={e.id} event={e} />)}
@@ -112,7 +113,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
           )}
           {past.length > 0 && (
             <>
-              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: '#333', letterSpacing: 2, textTransform: 'uppercase', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}` }}>
+              <div style={{ padding: '12px 16px 8px', fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: isLight ? '#1F1F1F' : '#AFAFAF', letterSpacing: 2, textTransform: 'uppercase', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#141414'}` }}>
                 Past · {past.length}
               </div>
               {past.map(e => <EventCard key={e.id} event={e} />)}
