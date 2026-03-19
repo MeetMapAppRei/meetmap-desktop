@@ -17,6 +17,20 @@ const parseCsvEnv = (value) =>
 
 const IMPORT_ADMIN_EMAILS = parseCsvEnv(import.meta.env.VITE_IMPORT_ADMIN_EMAILS).map(v => v.toLowerCase())
 const IMPORT_ADMIN_USER_IDS = parseCsvEnv(import.meta.env.VITE_IMPORT_ADMIN_USER_IDS)
+const CITY_LINKS = [
+  { slug: 'dallas', label: 'Dallas' },
+  { slug: 'houston', label: 'Houston' },
+  { slug: 'los-angeles', label: 'Los Angeles' },
+  { slug: 'miami', label: 'Miami' },
+  { slug: 'atlanta', label: 'Atlanta' },
+  { slug: 'phoenix', label: 'Phoenix' },
+  { slug: 'new-york', label: 'New York' },
+  { slug: 'chicago', label: 'Chicago' },
+  { slug: 'san-diego', label: 'San Diego' },
+  { slug: 'austin', label: 'Austin' },
+  { slug: 'charlotte', label: 'Charlotte' },
+  { slug: 'orlando', label: 'Orlando' },
+]
 
 const isImportAdminUser = (user) => {
   if (!user) return false
@@ -648,6 +662,43 @@ function AppInner() {
             onEventClick={handleEventClick}
             onHover={setHoveredEvent}
           />
+          <div style={{
+            borderTop: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
+            padding: '10px 14px 12px',
+            background: isLight ? '#FAFAFA' : '#101010',
+          }}>
+            <div style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 10,
+              letterSpacing: 1.3,
+              textTransform: 'uppercase',
+              color: isLight ? '#555' : '#8A8A8A',
+              marginBottom: 8,
+              fontWeight: 700,
+            }}>
+              Popular Cities
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {CITY_LINKS.map(city => (
+                <a
+                  key={city.slug}
+                  href={`/car-meets-in-${city.slug}/`}
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 11,
+                    color: isLight ? '#D1491A' : '#FF8A5C',
+                    textDecoration: 'none',
+                    border: `1px solid ${isLight ? '#F0C3B3' : '#3A241C'}`,
+                    borderRadius: 999,
+                    padding: '3px 9px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Car Meets in {city.label}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
