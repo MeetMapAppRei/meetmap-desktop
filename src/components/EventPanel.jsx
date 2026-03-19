@@ -2,7 +2,7 @@ import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
-export default function EventPanel({ events, loading, selectedEvent, onEventClick, onHover }) {
+export default function EventPanel({ events, loading, selectedEvent, onEventClick, onHover, savedEventIds = [], onToggleSaved }) {
   const { isLight } = useTheme()
   const today = new Date().toISOString().split('T')[0]
   const upcoming = events.filter(e => e.date >= today)
@@ -18,6 +18,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
     const isSelected = selectedEvent?.id === event.id
     const isPast = event.date < today
     const attendeeCount = event.event_attendees?.[0]?.count || 0
+    const isSaved = savedEventIds.includes(event.id)
 
     return (
       <div
@@ -52,10 +53,31 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
 
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Type badge */}
-            <span style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
-              color, textTransform: 'capitalize', letterSpacing: 0.5,
-            }}>{event.type}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
+                color, textTransform: 'capitalize', letterSpacing: 0.5,
+              }}>{event.type}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleSaved?.(event.id)
+                }}
+                style={{
+                  border: `1px solid ${isSaved ? '#FF6B35' : (isLight ? '#D9D9D9' : '#2A2A2A')}`,
+                  background: isSaved ? '#27140F' : 'transparent',
+                  color: isSaved ? '#FF8A5C' : (isLight ? '#666' : '#888'),
+                  borderRadius: 999,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  padding: '2px 7px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isSaved ? '★ Saved' : '☆ Save'}
+              </button>
+            </div>
 
             {/* Title */}
             <div style={{

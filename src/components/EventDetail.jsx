@@ -166,7 +166,7 @@ function EditModal({ event, user, onSaved, onCancel }) {
   )
 }
 
-export default function EventDetail({ event: initialEvent, user, onClose, onAuthNeeded, onDeleted, onUpdated }) {
+export default function EventDetail({ event: initialEvent, user, saved = false, onToggleSaved, onClose, onAuthNeeded, onDeleted, onUpdated }) {
   const [event, setEvent] = useState(initialEvent)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
@@ -299,6 +299,22 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
                     {attending ? `✓ YOU'RE GOING · ${attendeeCount}` : `I'M IN · ${attendeeCount} GOING`}
                   </button>
                 )}
+                <button
+                  onClick={onToggleSaved}
+                  style={{
+                    flex: 1,
+                    background: saved ? '#27140F' : shareBg,
+                    color: saved ? '#FF8A5C' : shareText,
+                    border: `1px solid ${saved ? '#FF6B35' : shareBorder}`,
+                    borderRadius: 8,
+                    padding: 12,
+                    fontFamily: "'Bebas Neue'",
+                    fontSize: 15,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {saved ? '★ SAVED' : '☆ SAVE'}
+                </button>
                 <button onClick={handleShare} style={{ flex: 1, background: shareBg, color: copied ? '#7CFF6B' : shareText, border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 15, cursor: 'pointer' }}>
                   {copied ? '✓ COPIED!' : '🔗 SHARE'}
                 </button>

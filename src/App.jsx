@@ -37,6 +37,7 @@ const isImportAdminUser = (user) => {
   const email = String(user.email || '').toLowerCase()
   return IMPORT_ADMIN_EMAILS.includes(email) || IMPORT_ADMIN_USER_IDS.includes(user.id)
 }
+const getSavedEventsStorageKey = (user) => `meetmap:saved-events:${user?.id || 'anon'}`
 
 function AppInner() {
   // Redirect human mobile users to the mobile app. Keep search crawlers on
@@ -63,6 +64,8 @@ function AppInner() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showPast, setShowPast] = useState(false)
+  const [showSavedOnly, setShowSavedOnly] = useState(false)
+  const [savedEventIds, setSavedEventIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [mapCenter, setMapCenter] = useState(null)
 
@@ -103,6 +106,22 @@ function AppInner() {
     setFiltered(result)
   }, [events, search, typeFilter])
 
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(getSavedEventsStorageKey(user))
+      const parsed = raw ? JSON.parse(raw) : []
+      setSavedEventIds(Array.isArray(parsed) ? parsed : [])
+    } catch {
+      setSavedEventIds([])
+    }
+  }, [user])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(getSavedEventsStorageKey(user), JSON.stringify(savedEventIds))
+    } catch {}
+  }, [user, savedEventIds])
+
   const loadEvents = async () => {
     setLoading(true)
     try {
@@ -133,6 +152,15 @@ function AppInner() {
     if (event.lat && event.lng) setMapCenter({ lat: event.lat, lng: event.lng })
   }
 
+  const handleToggleSaved = (eventId) => {
+    if (!eventId) return
+    setSavedEventIds(prev => (
+      prev.includes(eventId)
+        ? prev.filter(id => id !== eventId)
+        : [eventId, ...prev]
+    ))
+  }
+
   const toRad = (deg) => (deg * Math.PI) / 180
   const distanceMiles = (lat1, lon1, lat2, lon2) => {
     const R = 3958.8 // Earth radius in miles
@@ -151,14 +179,18 @@ function AppInner() {
     return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
   }
 
+  const baseEvents = showSavedOnly
+    ? filtered.filter(e => savedEventIds.includes(e.id))
+    : filtered
+
   const eventsForDisplay = nearMeOnly && nearMeCoords
-    ? filtered
+    ? baseEvents
       .filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lng) && distanceMiles(nearMeCoords.lat, nearMeCoords.lng, e.lat, e.lng) <= RADIUS_MILES)
       .sort((a, b) => (
         distanceMiles(nearMeCoords.lat, nearMeCoords.lng, a.lat, a.lng) -
         distanceMiles(nearMeCoords.lat, nearMeCoords.lng, b.lat, b.lng)
       ))
-    : filtered
+    : baseEvents
 
   const upcomingCount = eventsForDisplay.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
 
@@ -607,6 +639,20 @@ function AppInner() {
           {showPast ? '✓ Past Events' : 'Past Events'}
         </button>
 
+        <button
+          onClick={() => setShowSavedOnly(p => !p)}
+          style={{
+            padding: '5px 14px', borderRadius: 20, border: '1px solid',
+            borderColor: showSavedOnly ? '#FF6B35' : '#1A1A1A',
+            background: showSavedOnly ? '#20140F' : 'transparent',
+            color: showSavedOnly ? '#FF8A5C' : '#444',
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {showSavedOnly ? `★ Saved (${savedEventIds.length})` : 'Saved'}
+        </button>
+
         {/* spacer */}
 
         {/* Spacer */}
@@ -661,6 +707,8 @@ function AppInner() {
             selectedEvent={selectedEvent}
             onEventClick={handleEventClick}
             onHover={setHoveredEvent}
+            savedEventIds={savedEventIds}
+            onToggleSaved={handleToggleSaved}
           />
           <div style={{
             borderTop: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
@@ -707,6 +755,8 @@ function AppInner() {
         <EventDetail
           event={selectedEvent}
           user={user}
+          saved={savedEventIds.includes(selectedEvent.id)}
+          onToggleSaved={() => handleToggleSaved(selectedEvent.id)}
           onClose={() => setSelectedEvent(null)}
           onAuthNeeded={() => setShowAuth(true)}
           onDeleted={handleEventDeleted}
