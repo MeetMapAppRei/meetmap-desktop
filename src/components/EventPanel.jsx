@@ -1,5 +1,6 @@
 import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
+import { formatEventTime } from '../lib/formatEventTime'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -138,7 +139,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
             {/* Date + attendees */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#D1491A' : color, fontWeight: 700 }}>
-                {formatDate(event.date)}{event.time ? ` · ${event.time}` : ''}
+                {formatDate(event.date)}{event.time ? ` · ${formatEventTime(event.time)}` : ''}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {(goingCount > 0 || interestedCount > 0) && (

@@ -3,6 +3,7 @@ import { supabase, fetchComments, postComment, getEventRsvpStatus, setEventRsvp,
 import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
 import ReportEventModal from './ReportEventModal'
+import { formatEventTime } from '../lib/formatEventTime'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -377,7 +378,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
               )}
 
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted, marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
-              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${event.time}` : ''}</div>
+              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${formatEventTime(event.time)}` : ''}</div>
               {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: muted, marginBottom: 14 }}>🎤 Hosted by <span style={{ color: isLight ? '#888' : '#aaa' }}>{event.host}</span></div>}
 
               {event.tags?.length > 0 && (
