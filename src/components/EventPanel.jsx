@@ -108,6 +108,11 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#2C2C2C' : '#B8B8B8', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               📍 {event.address || `${event.location} · ${event.city}`}
             </div>
+            {event.latest_update_message && (
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#D1491A' : '#FF8A5C', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                📣 {event.latest_update_message}
+              </div>
+            )}
 
             {/* Date + attendees */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

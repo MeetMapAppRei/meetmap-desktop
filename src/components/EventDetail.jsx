@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase, fetchComments, postComment, toggleAttendance, getAttendanceStatus, updateEvent, uploadEventPhoto } from '../lib/supabase'
+import { supabase, fetchComments, postComment, toggleAttendance, getAttendanceStatus, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
 import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
@@ -198,10 +198,13 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const [attending, setAttending] = useState(false)
   const [attendeeCount, setAttendeeCount] = useState(event.event_attendees?.[0]?.count || 0)
   const [posting, setPosting] = useState(false)
+  const [postingUpdate, setPostingUpdate] = useState(false)
   const [copied, setCopied] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [updateMessage, setUpdateMessage] = useState('')
+  const [updateError, setUpdateError] = useState('')
 
   const { isLight } = useTheme()
 
@@ -268,6 +271,30 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
     setTimeout(() => setCopied(false), 2500)
   }
 
+  const handlePostUpdate = async () => {
+    const message = updateMessage.trim()
+    if (!message) return
+    if (!user) return onAuthNeeded()
+    setPostingUpdate(true)
+    setUpdateError('')
+    try {
+      const row = await createEventUpdate(event.id, user.id, message)
+      const updatedEvent = {
+        ...event,
+        latest_update_id: row.id,
+        latest_update_message: row.message,
+        latest_update_created_at: row.created_at,
+      }
+      setEvent(updatedEvent)
+      onUpdated?.(updatedEvent)
+      setUpdateMessage('')
+    } catch (e) {
+      setUpdateError(e.message || 'Failed to post update')
+    } finally {
+      setPostingUpdate(false)
+    }
+  }
+
   const formatDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
@@ -331,6 +358,12 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
               )}
 
               {event.description && <p style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted2, lineHeight: 1.7, marginBottom: 20 }}>{event.description}</p>}
+              {event.latest_update_message && (
+                <div style={{ marginBottom: 14, border: `1px solid ${isLight ? '#F0C3B3' : '#3A241C'}`, background: isLight ? '#FFF3ED' : '#1A110D', borderRadius: 8, padding: '8px 10px' }}>
+                  <div style={{ fontFamily: "'DM Sans'", fontSize: 11, color: isLight ? '#D1491A' : '#FF8A5C', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>Host update</div>
+                  <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: isLight ? '#444' : '#D8D8D8', lineHeight: 1.5 }}>{event.latest_update_message}</div>
+                </div>
+              )}
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -381,7 +414,25 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
               {/* Owner controls */}
               {isOwner && (
-                <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <input
+                      value={updateMessage}
+                      onChange={e => setUpdateMessage(e.target.value)}
+                      placeholder="Post update for saved attendees..."
+                      maxLength={220}
+                      style={{ flex: 1, background: inputBg, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '8px 10px', color: inputText, fontFamily: "'DM Sans'", fontSize: 12, outline: 'none' }}
+                    />
+                    <button
+                      onClick={handlePostUpdate}
+                      disabled={postingUpdate || !updateMessage.trim()}
+                      style={{ background: postingUpdate || !updateMessage.trim() ? '#222' : '#FF6B35', color: postingUpdate || !updateMessage.trim() ? '#555' : '#0A0A0A', border: 'none', borderRadius: 8, padding: '0 12px', fontFamily: "'Bebas Neue'", fontSize: 14, letterSpacing: 0.8, cursor: postingUpdate || !updateMessage.trim() ? 'default' : 'pointer' }}
+                    >
+                      {postingUpdate ? 'POSTING...' : 'POST UPDATE'}
+                    </button>
+                  </div>
+                  {updateError && <div style={{ fontFamily: "'DM Sans'", fontSize: 12, color: '#FF7A7A', marginBottom: 8 }}>{updateError}</div>}
+                  <div style={{ display: 'flex', gap: 10 }}>
                   <button
                     onClick={() => setEditing(true)}
                     style={{ flex: 1, background: shareBg, color: isLight ? '#666' : '#888', border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
@@ -404,6 +455,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               )}
             </div>
