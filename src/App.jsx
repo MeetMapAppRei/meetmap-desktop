@@ -331,6 +331,9 @@ function AppInner() {
       let coords = null
       const query = imp.address?.trim() ? imp.address : `${imp.location || ''}, ${imp.city || ''}`.trim()
       if (query) coords = await geocodeAddress(query).catch(() => null)
+      if (query && !coords) {
+        throw new Error('Could not find that street address on the map. Try editing the address (include street, city, state, zip).')
+      }
 
       const tags = Array.isArray(imp.tags) ? imp.tags : []
 
@@ -356,6 +359,7 @@ function AppInner() {
       setShowImportQueue(false)
     } catch (e) {
       console.error('Approve failed:', e)
+      setImportError(e?.message || 'Approve failed')
     } finally {
       setApprovingImportId(null)
     }

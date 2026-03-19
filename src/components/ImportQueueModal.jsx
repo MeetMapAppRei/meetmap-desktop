@@ -113,6 +113,21 @@ export default function ImportQueueModal({
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          {!!errorMessage && (
+            <div style={{
+              marginBottom: 12,
+              border: `1px solid ${isLight ? '#FF6B6B' : '#FF3535'}`,
+              background: isLight ? '#FFF1F1' : '#1A0A0A',
+              color: isLight ? '#B00020' : '#FF6060',
+              borderRadius: 10,
+              padding: '10px 12px',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12,
+              lineHeight: 1.4,
+            }}>
+              {String(errorMessage)}
+            </div>
+          )}
           {!imports || imports.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '36px 10px', color: textMuted, fontFamily: "'DM Sans', sans-serif" }}>
               {requiresAuth
@@ -148,8 +163,9 @@ export default function ImportQueueModal({
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {imports.map(i => {
-                const ready = requiredOk(i)
                 const isEditing = editingId === i.id
+                const candidate = isEditing && draft ? draft : i
+                const ready = requiredOk(candidate)
                 return (
                   <div
                     key={i.id}
@@ -235,7 +251,22 @@ export default function ImportQueueModal({
                           REJECT
                         </button>
                         <button
-                          onClick={() => onApprove?.(i)}
+                          onClick={async () => {
+                            const impForApprove = isEditing && draft
+                              ? {
+                                ...i,
+                                ...draft,
+                                tags: (draft.tagsText || '').split(',').map(t => t.trim()).filter(Boolean),
+                              }
+                              : i
+
+                            if (isEditing && draft) {
+                              await onUpdateImport?.(i.id, draft)
+                              setEditingId(null)
+                              setDraft(null)
+                            }
+                            await onApprove?.(impForApprove)
+                          }}
                           style={{
                             background: ready ? '#FF6B35' : isLight ? '#EDEDED' : '#222',
                             border: 'none',
