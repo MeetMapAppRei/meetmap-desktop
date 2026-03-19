@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase, fetchComments, postComment, getEventRsvpStatus, setEventRsvp, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
 import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
+import ReportEventModal from './ReportEventModal'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -207,6 +208,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const [editing, setEditing] = useState(false)
   const [updateMessage, setUpdateMessage] = useState('')
   const [updateError, setUpdateError] = useState('')
+  const [showReport, setShowReport] = useState(false)
 
   const { isLight } = useTheme()
 
@@ -392,6 +394,32 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
                 </div>
               )}
 
+              {/* Report button (opens modal) */}
+              {!isOwner && (
+                <div style={{ marginBottom: 12 }}>
+                  <button
+                    onClick={() => {
+                      if (!user) return onAuthNeeded()
+                      setShowReport(true)
+                    }}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: `1px solid ${shareBorder}`,
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      fontFamily: "'Bebas Neue'",
+                      fontSize: 16,
+                      letterSpacing: 1.2,
+                      cursor: 'pointer',
+                      color: isLight ? '#444' : '#aaa',
+                    }}
+                  >
+                    🚩 REPORT EVENT
+                  </button>
+                </div>
+              )}
+
               {/* Actions */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                 {!isPast && (
@@ -528,6 +556,15 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
           </div>
         </div>
       </div>
+
+      {showReport && (
+        <ReportEventModal
+          event={event}
+          user={user}
+          onAuthNeeded={onAuthNeeded}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </>
   )
 }

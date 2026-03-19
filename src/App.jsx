@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents, fetchEventStatuses, fetchLatestEventUpdates } from './lib/supabase'
+import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents, fetchEventStatuses, fetchLatestEventUpdates, fetchEventReports, resolveEventReport } from './lib/supabase'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
@@ -7,6 +7,7 @@ import PostEventModal from './components/PostEventModal'
 import EventDetail from './components/EventDetail'
 import AuthModal from './components/AuthModal'
 import ImportQueueModal from './components/ImportQueueModal'
+import ModerationQueueModal from './components/ModerationQueueModal'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const parseCsvEnv = (value) =>
@@ -99,8 +100,12 @@ function AppInner() {
   const [nearMeError, setNearMeError] = useState('')
 
   const [showImportQueue, setShowImportQueue] = useState(false)
+  const [showModerationQueue, setShowModerationQueue] = useState(false)
   const [imports, setImports] = useState([])
   const [importsLoading, setImportsLoading] = useState(false)
+  const [moderationReports, setModerationReports] = useState([])
+  const [moderationLoading, setModerationLoading] = useState(false)
+  const [moderationResolvingReportId, setModerationResolvingReportId] = useState(null)
   const [approvingImportId, setApprovingImportId] = useState(null)
   const [importProcessing, setImportProcessing] = useState(false)
   const [importParams, setImportParams] = useState(null) // { sourceUrl, imageUrl }
@@ -507,6 +512,45 @@ function AppInner() {
     }
   }
 
+  const loadPendingModerationReports = async () => {
+    if (!user || !canAccessImports) return
+    setModerationLoading(true)
+    try {
+      const data = await fetchEventReports('pending')
+      setModerationReports(data || [])
+    } catch (e) {
+      console.error('Failed to load moderation queue:', e)
+    } finally {
+      setModerationLoading(false)
+    }
+  }
+
+  const handleResolveReport = async (reportId) => {
+    if (!user) return
+    setModerationResolvingReportId(reportId)
+    try {
+      await resolveEventReport(reportId, user.id, 'resolved')
+      setModerationReports(prev => prev.filter(r => r.id !== reportId))
+    } catch (e) {
+      console.error('Failed to resolve report:', e)
+    } finally {
+      setModerationResolvingReportId(null)
+    }
+  }
+
+  const handleIgnoreReport = async (reportId) => {
+    if (!user) return
+    setModerationResolvingReportId(reportId)
+    try {
+      await resolveEventReport(reportId, user.id, 'ignored')
+      setModerationReports(prev => prev.filter(r => r.id !== reportId))
+    } catch (e) {
+      console.error('Failed to ignore report:', e)
+    } finally {
+      setModerationResolvingReportId(null)
+    }
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const importFlag = params.get('import')
@@ -540,6 +584,12 @@ function AppInner() {
     if (!user || !canAccessImports) return
     loadPendingImports()
   }, [showImportQueue, user, canAccessImports])
+
+  useEffect(() => {
+    if (!showModerationQueue) return
+    if (!user || !canAccessImports) return
+    loadPendingModerationReports()
+  }, [showModerationQueue, user, canAccessImports])
 
   useEffect(() => {
     if (!importParams) return
@@ -869,6 +919,29 @@ function AppInner() {
           </button>
         )}
 
+        {/* Moderation (event reports) */}
+        {canAccessImports && (
+          <button
+            onClick={() => setShowModerationQueue(true)}
+            style={{
+              background: isLight ? '#FFFFFF' : 'none',
+              border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+              borderRadius: 10,
+              padding: '8px 12px',
+              color: isLight ? '#444' : '#555',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12,
+              fontWeight: 900,
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: 0.3,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Moderation
+          </button>
+        )}
+
         {/* Type filters */}
         <div style={{ display: 'flex', gap: 6 }}>
           {/* All Events */}
@@ -1135,6 +1208,16 @@ function AppInner() {
           uploading={importUploading}
           onPickUpload={handleUploadFlyer}
           onClose={() => setShowImportQueue(false)}
+        />
+      )}
+      {showModerationQueue && canAccessImports && (
+        <ModerationQueueModal
+          reports={moderationReports}
+          loading={moderationLoading}
+          resolvingReportId={moderationResolvingReportId}
+          onResolve={handleResolveReport}
+          onIgnore={handleIgnoreReport}
+          onClose={() => setShowModerationQueue(false)}
         />
       )}
       {showAuth && (
