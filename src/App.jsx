@@ -25,11 +25,14 @@ const isImportAdminUser = (user) => {
 }
 
 function AppInner() {
-  // Redirect mobile users to the mobile app (only if not already on the mobile site)
+  // Redirect human mobile users to the mobile app. Keep search crawlers on
+  // the desktop URL so findcarmeets.com remains indexable.
   useEffect(() => {
-    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent)
+    const ua = navigator.userAgent || ''
+    const isBot = /Googlebot|AdsBot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Slurp|facebookexternalhit|Twitterbot|LinkedInBot/i.test(ua)
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua)
     const isMobileSite = window.location.hostname === 'meetmap-gilt.vercel.app'
-    if (isMobile && !isMobileSite) {
+    if (!isBot && isMobile && !isMobileSite) {
       window.location.href = 'https://meetmap-gilt.vercel.app'
     }
   }, [])
