@@ -62,6 +62,7 @@ function AppInner() {
   const [showPost, setShowPost] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [search, setSearch] = useState('')
+  const [activeCityFilter, setActiveCityFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showPast, setShowPast] = useState(false)
   const [showSavedOnly, setShowSavedOnly] = useState(false)
@@ -113,6 +114,9 @@ function AppInner() {
     const cityParam = (params.get('city') || '').trim()
     if (!cityParam) return
     setSearch(cityParam)
+    setActiveCityFilter(cityParam)
+    // Keep URL clean so users are not stuck in a hidden filter.
+    window.history.replaceState({}, '', window.location.pathname)
   }, [])
 
   useEffect(() => {
@@ -570,7 +574,10 @@ function AppInner() {
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: isLight ? '#444' : '#444' }}>🔍</span>
           <input
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => {
+              setSearch(e.target.value)
+              if (activeCityFilter) setActiveCityFilter('')
+            }}
             placeholder="Search events, city, tags..."
             style={{
               width: '100%', background: isLight ? '#FFFFFF' : '#141414', border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
@@ -678,6 +685,30 @@ function AppInner() {
             </button>
           ))}
         </div>
+
+        {activeCityFilter && (
+          <button
+            onClick={() => {
+              setSearch('')
+              setActiveCityFilter('')
+            }}
+            style={{
+              background: isLight ? '#FFF3ED' : '#20140F',
+              border: `1px solid ${isLight ? '#F0C3B3' : '#3A241C'}`,
+              color: isLight ? '#D1491A' : '#FF8A5C',
+              borderRadius: 999,
+              padding: '6px 12px',
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+            title="Clear city filter"
+          >
+            City: {activeCityFilter} ×
+          </button>
+        )}
 
         {/* Past events toggle */}
         <button
