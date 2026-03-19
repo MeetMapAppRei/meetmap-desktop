@@ -1116,7 +1116,7 @@ function AppInner() {
 
         {/* Auth + Post */}
         {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#555' }}>
               👤 <span style={{ color: '#888' }}>{user.user_metadata?.username || user.email?.split('@')[0]}</span>
             </div>
@@ -1129,6 +1129,8 @@ function AppInner() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
               }}
             >+ POST EVENT</button>
             <button
@@ -1147,6 +1149,8 @@ function AppInner() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
               }}
             >
               Sign Out
@@ -1171,6 +1175,8 @@ function AppInner() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
               }}
             >
               Log In
@@ -1191,6 +1197,8 @@ function AppInner() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
               }}
             >
               JOIN FREE
