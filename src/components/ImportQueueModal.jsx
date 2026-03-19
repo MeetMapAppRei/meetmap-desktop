@@ -31,6 +31,7 @@ export default function ImportQueueModal({
 
   const [editingId, setEditingId] = useState(null)
   const [draft, setDraft] = useState(null)
+  const [addressVerifyById, setAddressVerifyById] = useState({})
 
   const overlayBg = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.92)'
   const panelBg = isLight ? '#FFFFFF' : '#0F0F0F'
@@ -60,6 +61,29 @@ export default function ImportQueueModal({
     description: i.description || '',
     tagsText: Array.isArray(i.tags) ? i.tags.join(', ') : (i.tags || ''),
   })
+
+  const verifyAddress = async (importId, currentDraft) => {
+    if (!importId || !currentDraft) return
+    const query = currentDraft.address?.trim()
+      ? currentDraft.address.trim()
+      : `${currentDraft.location || ''}, ${currentDraft.city || ''}`.trim()
+    if (!query) {
+      setAddressVerifyById(prev => ({ ...prev, [importId]: { status: 'idle', text: 'Enter address/location first' } }))
+      return
+    }
+    setAddressVerifyById(prev => ({ ...prev, [importId]: { status: 'checking', text: 'Checking address...' } }))
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`)
+      const data = await res.json()
+      if (Array.isArray(data) && data.length > 0) {
+        setAddressVerifyById(prev => ({ ...prev, [importId]: { status: 'ok', text: 'Address verified' } }))
+      } else {
+        setAddressVerifyById(prev => ({ ...prev, [importId]: { status: 'fail', text: 'Address not found' } }))
+      }
+    } catch {
+      setAddressVerifyById(prev => ({ ...prev, [importId]: { status: 'fail', text: 'Address lookup failed' } }))
+    }
+  }
 
   return (
     <div
@@ -341,6 +365,7 @@ export default function ImportQueueModal({
                               <input
                                 value={draft.location}
                                 onChange={e => setDraft(p => ({ ...p, location: e.target.value }))}
+                                onBlur={() => verifyAddress(i.id, draft)}
                                 style={{ width: '100%', background: inputBg, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '9px 12px', color: inputText, fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none' }}
                               />
                             </div>
@@ -349,6 +374,7 @@ export default function ImportQueueModal({
                               <input
                                 value={draft.city}
                                 onChange={e => setDraft(p => ({ ...p, city: e.target.value }))}
+                                onBlur={() => verifyAddress(i.id, draft)}
                                 style={{ width: '100%', background: inputBg, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '9px 12px', color: inputText, fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none' }}
                               />
                             </div>
@@ -359,8 +385,25 @@ export default function ImportQueueModal({
                             <input
                               value={draft.address}
                               onChange={e => setDraft(p => ({ ...p, address: e.target.value }))}
+                              onBlur={() => verifyAddress(i.id, draft)}
                               style={{ width: '100%', background: inputBg, border: `1px solid ${inputBorder}`, borderRadius: 8, padding: '9px 12px', color: inputText, fontFamily: "'DM Sans', sans-serif", fontSize: 13, outline: 'none' }}
                             />
+                            {addressVerifyById[i.id] && (
+                              <div style={{
+                                marginTop: 6,
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: 12,
+                                color:
+                                  addressVerifyById[i.id].status === 'ok'
+                                    ? (isLight ? '#0A7A22' : '#60FF90')
+                                    : addressVerifyById[i.id].status === 'checking'
+                                      ? textMuted
+                                      : (isLight ? '#A33' : '#FF6060'),
+                              }}>
+                                {addressVerifyById[i.id].status === 'ok' ? '✅ ' : addressVerifyById[i.id].status === 'fail' ? '⚠️ ' : '⏳ '}
+                                {addressVerifyById[i.id].text}
+                              </div>
+                            )}
                           </div>
 
                           <div style={{ marginTop: 10 }}>
