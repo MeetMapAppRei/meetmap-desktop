@@ -20,6 +20,11 @@ export default function ImportQueueModal({
   onApprove,
   onReject,
   onUpdateImport,
+  requiresAuth,
+  errorMessage,
+  showUpload,
+  uploading,
+  onPickUpload,
   onClose,
 }) {
   const { isLight } = useTheme()
@@ -110,7 +115,35 @@ export default function ImportQueueModal({
         <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
           {!imports || imports.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '36px 10px', color: textMuted, fontFamily: "'DM Sans', sans-serif" }}>
-              No pending imports.
+              {requiresAuth
+                ? 'Log in to create this flyer import.'
+                : errorMessage
+                  ? errorMessage
+                  : 'No pending imports.'}
+
+              {showUpload && !requiresAuth && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: textMuted, marginBottom: 10 }}>
+                    Instagram blocked the image URL. Download the flyer image and upload it here.
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) onPickUpload?.(f)
+                      e.target.value = ''
+                    }}
+                    disabled={uploading}
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  />
+                  {uploading && (
+                    <div style={{ marginTop: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: textMuted }}>
+                      Uploading…
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

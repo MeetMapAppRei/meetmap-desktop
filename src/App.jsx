@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport } from './lib/supabase'
+import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage } from './lib/supabase'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
@@ -46,6 +46,8 @@ function AppInner() {
   const [approvingImportId, setApprovingImportId] = useState(null)
   const [importProcessing, setImportProcessing] = useState(false)
   const [importParams, setImportParams] = useState(null) // { sourceUrl, imageUrl }
+  const [importError, setImportError] = useState(null)
+  const [importUploading, setImportUploading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
@@ -172,6 +174,7 @@ function AppInner() {
     if (!sourceUrl || !imageUrl) return
 
     setImportParams({ sourceUrl, imageUrl })
+    setImportError(null)
     setShowImportQueue(true)
   }, [])
 
@@ -194,11 +197,13 @@ function AppInner() {
     let cancelled = false
     const run = async () => {
       setImportProcessing(true)
+      setImportError(null)
       try {
         const processedKey = `meetmap:import:${user.id}:${importParams.sourceUrl}`
         try {
           if (window.sessionStorage.getItem(processedKey) === '1') {
             setImportParams(null)
+            setImportError(null)
             window.history.replaceState({}, '', window.location.pathname)
             await loadPendingImports()
             return
@@ -211,7 +216,11 @@ function AppInner() {
           body: JSON.stringify({ imageUrl: importParams.imageUrl, sourceUrl: importParams.sourceUrl }),
         })
         const json = await resp.json()
-        if (!resp.ok) throw new Error(json.error || 'Extraction failed')
+        if (!resp.ok) {
+          const msg = json.error || 'Extraction failed'
+          const status = json.status ? ` (status ${json.status})` : ''
+          throw new Error(msg + status)
+        }
         if (!json?.extracted) throw new Error('No extracted data returned')
 
         await createFlyerImport({
@@ -223,6 +232,7 @@ function AppInner() {
 
         if (!cancelled) {
           setImportParams(null)
+          setImportError(null)
           window.history.replaceState({}, '', window.location.pathname)
           await loadPendingImports()
         }
@@ -232,6 +242,7 @@ function AppInner() {
         } catch {}
       } catch (e) {
         console.error('Import processing failed:', e)
+        if (!cancelled) setImportError(e?.message || 'Import processing failed')
       } finally {
         if (!cancelled) setImportProcessing(false)
       }
@@ -242,6 +253,72 @@ function AppInner() {
       cancelled = true
     }
   }, [importParams, user, showImportQueue])
+
+  const handleUploadFlyer = async (file) => {
+    if (!file || !importParams?.sourceUrl) return
+    setImportUploading(true)
+    setImportError(null)
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader()
+        r.onerror = () => reject(new Error('Failed to read file'))
+        r.onload = () => resolve(String(r.result || ''))
+        r.readAsDataURL(file)
+      })
+
+      const m = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/)
+      if (!m) throw new Error('Unsupported image file')
+      const mediaType = m[1]
+      const imageBase64 = m[2]
+
+      const resp = await fetch('/api/extract-flyer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceUrl: importParams.sourceUrl,
+          imageUrl: importParams.imageUrl || '',
+          imageBase64,
+          mediaType,
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok) {
+        const msg =
+          typeof json.error === 'string'
+            ? json.error
+            : json.error
+              ? JSON.stringify(json.error)
+              : 'Extraction failed'
+        const status = json.status ? ` (status ${json.status})` : ''
+        throw new Error(msg + status)
+      }
+      if (!json?.extracted) throw new Error('No extracted data returned')
+
+      if (!user) {
+        setImportError('Log in to create this flyer import.')
+        setShowAuth(true)
+        return
+      }
+
+      const storedImageUrl = await uploadFlyerImportImage(file, user.id)
+
+      await createFlyerImport({
+        userId: user.id,
+        sourceUrl: importParams.sourceUrl,
+        imageUrl: storedImageUrl,
+        extracted: json.extracted,
+      })
+
+      setImportParams(null)
+      setImportError(null)
+      window.history.replaceState({}, '', window.location.pathname)
+      await loadPendingImports()
+    } catch (e) {
+      setImportError(e?.message || 'Upload failed')
+    } finally {
+      setImportUploading(false)
+    }
+  }
 
   const handleApproveImport = async (imp) => {
     if (!user || !imp) return
@@ -568,6 +645,11 @@ function AppInner() {
           onApprove={handleApproveImport}
           onReject={handleRejectImport}
           onUpdateImport={handleUpdateImport}
+          requiresAuth={!user}
+          errorMessage={importError}
+          showUpload={!!importParams && !!importError && (String(importError).includes('robots.txt') || String(importError).includes('Could not fetch image'))}
+          uploading={importUploading}
+          onPickUpload={handleUploadFlyer}
           onClose={() => setShowImportQueue(false)}
         />
       )}
