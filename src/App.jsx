@@ -510,7 +510,7 @@ function AppInner() {
             letterSpacing: 0.3,
           }}
         >
-          {isLight ? 'Light' : 'Dark'}
+          Light/Dark
         </button>
 
         {/* Imports (flyer queue) */}
