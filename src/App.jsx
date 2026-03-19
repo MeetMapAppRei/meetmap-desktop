@@ -116,6 +116,9 @@ function AppInner() {
   const topBtnBorder = isLight ? '#E5E5E5' : '#1E1E1E'
   const topBtnColor = isLight ? '#444' : '#555'
   const topBtnBg = isLight ? '#FFFFFF' : 'none'
+  const navBtnHeight = 36
+  const navBtnPaddingX = 12
+  const navBtnBorderRadius = 10
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
@@ -877,14 +880,18 @@ function AppInner() {
             background: topBtnBg,
             border: `1px solid ${topBtnBorder}`,
             color: topBtnColor,
-            borderRadius: 10,
-            padding: '8px 12px',
+            borderRadius: navBtnBorderRadius,
+            padding: `0 ${navBtnPaddingX}px`,
+            height: navBtnHeight,
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 12,
             fontWeight: 800,
             cursor: 'pointer',
             textTransform: 'uppercase',
             letterSpacing: 0.3,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           Light/Dark
@@ -896,13 +903,17 @@ function AppInner() {
             background: topBtnBg,
             border: `1px solid ${topBtnBorder}`,
             color: topBtnColor,
-            borderRadius: 10,
-            padding: '8px 12px',
+            borderRadius: navBtnBorderRadius,
+            padding: `0 ${navBtnPaddingX}px`,
+            height: navBtnHeight,
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 12,
             fontWeight: 800,
             cursor: 'pointer',
             whiteSpace: 'nowrap',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           title="Enable reminders for saved events"
         >
@@ -916,8 +927,9 @@ function AppInner() {
             style={{
               background: topBtnBg,
               border: `1px solid ${topBtnBorder}`,
-              borderRadius: 10,
-              padding: '8px 12px',
+              borderRadius: navBtnBorderRadius,
+              padding: `0 ${navBtnPaddingX}px`,
+              height: navBtnHeight,
               color: topBtnColor,
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 12,
@@ -926,6 +938,9 @@ function AppInner() {
               textTransform: 'uppercase',
               letterSpacing: 0.3,
               whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             Imports
@@ -939,8 +954,9 @@ function AppInner() {
             style={{
               background: topBtnBg,
               border: `1px solid ${topBtnBorder}`,
-              borderRadius: 10,
-              padding: '8px 12px',
+              borderRadius: navBtnBorderRadius,
+              padding: `0 ${navBtnPaddingX}px`,
+              height: navBtnHeight,
               color: topBtnColor,
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 12,
@@ -949,6 +965,9 @@ function AppInner() {
               textTransform: 'uppercase',
               letterSpacing: 0.3,
               whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             Moderation
@@ -1105,8 +1124,11 @@ function AppInner() {
               onClick={() => setShowPost(true)}
               style={{
                 background: '#FF6B35', color: '#0A0A0A', border: 'none', borderRadius: 10,
-                padding: '8px 12px', fontFamily: "'Bebas Neue', sans-serif",
+                padding: `0 ${navBtnPaddingX}px`, height: navBtnHeight, fontFamily: "'Bebas Neue', sans-serif",
                 fontSize: 16, letterSpacing: 1.5, cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >+ POST EVENT</button>
             <button
@@ -1114,13 +1136,17 @@ function AppInner() {
               style={{
                 background: topBtnBg,
                 border: `1px solid ${topBtnBorder}`,
-                borderRadius: 10,
-                padding: '8px 12px',
+                borderRadius: navBtnBorderRadius,
+                padding: `0 ${navBtnPaddingX}px`,
+                height: navBtnHeight,
                 color: topBtnColor,
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: 12,
                 cursor: 'pointer',
                 fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               Sign Out
@@ -1133,14 +1159,18 @@ function AppInner() {
               style={{
                 background: topBtnBg,
                 border: `1px solid ${topBtnBorder}`,
-                borderRadius: 10,
-                padding: '8px 12px',
+                borderRadius: navBtnBorderRadius,
+                padding: `0 ${navBtnPaddingX}px`,
+                height: navBtnHeight,
                 color: topBtnColor,
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: 12,
                 cursor: 'pointer',
                 fontWeight: 800,
                 textTransform: 'capitalize',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               Log In
@@ -1150,13 +1180,17 @@ function AppInner() {
               style={{
                 background: '#FF6B35',
                 border: 'none',
-                borderRadius: 10,
-                padding: '8px 12px',
+                borderRadius: navBtnBorderRadius,
+                padding: `0 ${navBtnPaddingX}px`,
+                height: navBtnHeight,
                 color: '#0A0A0A',
                 fontFamily: "'Bebas Neue', sans-serif",
                 fontSize: 16,
                 letterSpacing: 1.5,
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               JOIN FREE
