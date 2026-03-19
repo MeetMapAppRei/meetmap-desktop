@@ -29,7 +29,7 @@ function AppInner() {
   // the desktop URL so findcarmeets.com remains indexable.
   useEffect(() => {
     const ua = navigator.userAgent || ''
-    const isBot = /Googlebot|AdsBot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Slurp|facebookexternalhit|Twitterbot|LinkedInBot/i.test(ua)
+    const isBot = /Googlebot|Google-InspectionTool|AdsBot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Slurp|facebookexternalhit|Twitterbot|LinkedInBot/i.test(ua)
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua)
     const isMobileSite = window.location.hostname === 'meetmap-gilt.vercel.app'
     if (!isBot && isMobile && !isMobileSite) {
