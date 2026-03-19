@@ -831,7 +831,7 @@ function AppInner() {
       {/* TOP NAV */}
       <nav style={{
         height: 58, background: isLight ? '#FFFFFF' : '#0D0D0D', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
-        display: 'flex', alignItems: 'center', padding: '0 24px', gap: 24,
+        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16,
         flexShrink: 0, zIndex: 100,
       }}>
         {/* Logo */}
