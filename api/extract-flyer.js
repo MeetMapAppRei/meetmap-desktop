@@ -207,13 +207,6 @@ export default async function handler(req, res) {
       } catch {}
     }
 
-    const arrayBuffer = await imgRes.arrayBuffer()
-    const base64 = Buffer.from(arrayBuffer).toString('base64')
-
-    const contentTypeRaw = imgRes.headers.get('content-type') || 'image/jpeg'
-    const contentType = contentTypeRaw.split(';')[0].trim()
-    const mediaType = contentType.startsWith('image/') ? contentType : 'image/jpeg'
-
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
