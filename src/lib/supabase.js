@@ -65,12 +65,13 @@ export const fetchFlyerImports = async (userId, status = 'pending') => {
 }
 
 export const createFlyerImport = async ({ userId, sourceUrl, imageUrl, extracted }) => {
+  // IMPORTANT: Instagram can return slightly different image URLs (poster/thumbnails)
+  // for the same reel. So dedupe must be based on sourceUrl only.
   const { data: existing, error: existingErr } = await supabase
     .from('flyer_imports')
     .select('*')
     .eq('user_id', userId)
     .eq('source_url', sourceUrl)
-    .eq('image_url', imageUrl)
     .eq('status', 'pending')
     .maybeSingle()
 
