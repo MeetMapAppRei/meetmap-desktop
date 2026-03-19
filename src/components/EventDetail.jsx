@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase, fetchComments, postComment, toggleAttendance, getAttendanceStatus, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
+import { supabase, fetchComments, postComment, getEventRsvpStatus, setEventRsvp, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
 import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
@@ -195,8 +195,9 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const [event, setEvent] = useState(initialEvent)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
-  const [attending, setAttending] = useState(false)
-  const [attendeeCount, setAttendeeCount] = useState(event.event_attendees?.[0]?.count || 0)
+  const [rsvpStatus, setRsvpStatus] = useState(null)
+  const [interestedCount, setInterestedCount] = useState(event.interested_count || 0)
+  const [goingCount, setGoingCount] = useState(event.going_count || event.event_attendees?.[0]?.count || 0)
   const [posting, setPosting] = useState(false)
   const [postingUpdate, setPostingUpdate] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -235,14 +236,19 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
   useEffect(() => {
     fetchComments(event.id).then(setComments).catch(console.error)
-    if (user) getAttendanceStatus(event.id, user.id).then(setAttending)
+    if (user) getEventRsvpStatus(event.id, user.id).then(setRsvpStatus)
   }, [event.id, user])
 
-  const handleAttend = async () => {
+  const handleSetRsvp = async (nextStatus) => {
     if (!user) return onAuthNeeded()
-    const now = await toggleAttendance(event.id, user.id)
-    setAttending(now)
-    setAttendeeCount(p => now ? p + 1 : p - 1)
+    const current = rsvpStatus
+    const desired = current === nextStatus ? null : nextStatus
+    await setEventRsvp(event.id, user.id, desired)
+    setRsvpStatus(desired)
+    if (current === 'going') setGoingCount(p => Math.max(0, p - 1))
+    if (current === 'interested') setInterestedCount(p => Math.max(0, p - 1))
+    if (desired === 'going') setGoingCount(p => p + 1)
+    if (desired === 'interested') setInterestedCount(p => p + 1)
   }
 
   const handleComment = async () => {
@@ -368,9 +374,14 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                 {!isPast && (
-                  <button onClick={handleAttend} style={{ flex: 2, background: attending ? 'transparent' : color, color: attending ? color : '#0A0A0A', border: `1px solid ${color}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 17, letterSpacing: 1.5, cursor: 'pointer' }}>
-                    {attending ? `✓ YOU'RE GOING · ${attendeeCount}` : `I'M IN · ${attendeeCount} GOING`}
-                  </button>
+                  <>
+                    <button onClick={() => handleSetRsvp('going')} style={{ flex: 1.4, background: rsvpStatus === 'going' ? 'transparent' : color, color: rsvpStatus === 'going' ? color : '#0A0A0A', border: `1px solid ${color}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 1.2, cursor: 'pointer' }}>
+                      {rsvpStatus === 'going' ? `✓ GOING · ${goingCount}` : `GOING · ${goingCount}`}
+                    </button>
+                    <button onClick={() => handleSetRsvp('interested')} style={{ flex: 1.2, background: rsvpStatus === 'interested' ? '#24180A' : shareBg, color: rsvpStatus === 'interested' ? '#FFD700' : shareText, border: `1px solid ${rsvpStatus === 'interested' ? '#FFD700' : shareBorder}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 1, cursor: 'pointer' }}>
+                      {rsvpStatus === 'interested' ? `★ INTERESTED · ${interestedCount}` : `INTERESTED · ${interestedCount}`}
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={onToggleSaved}

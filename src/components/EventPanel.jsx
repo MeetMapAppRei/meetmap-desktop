@@ -26,7 +26,8 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
     const color = TYPE_COLORS[event.type] || '#FF6B35'
     const isSelected = selectedEvent?.id === event.id
     const isPast = event.date < today
-    const attendeeCount = event.event_attendees?.[0]?.count || 0
+    const goingCount = event.going_count || event.event_attendees?.[0]?.count || 0
+    const interestedCount = event.interested_count || 0
     const isSaved = savedEventIds.includes(event.id)
     const directionsUrl = getDirectionsUrl(event)
     const statusKey = String(event.status || 'active').toLowerCase()
@@ -120,9 +121,9 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
                 {formatDate(event.date)}{event.time ? ` · ${event.time}` : ''}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {attendeeCount > 0 && (
+                {(goingCount > 0 || interestedCount > 0) && (
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#2C2C2C' : '#B8B8B8' }}>
-                    {attendeeCount} going
+                    {goingCount} going{interestedCount > 0 ? ` · ${interestedCount} interested` : ''}
                   </span>
                 )}
                 <a

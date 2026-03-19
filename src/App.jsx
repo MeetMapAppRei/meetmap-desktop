@@ -83,6 +83,7 @@ function AppInner() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [showPast, setShowPast] = useState(false)
   const [showCanceled, setShowCanceled] = useState(false)
+  const [showGoingOnly, setShowGoingOnly] = useState(false)
   const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [savedEventIds, setSavedEventIds] = useState([])
   const [savedSyncAvailable, setSavedSyncAvailable] = useState(true)
@@ -282,8 +283,12 @@ function AppInner() {
     ? baseEvents
     : baseEvents.filter(e => String(e.status || 'active').toLowerCase() !== 'canceled')
 
+  const goingFilteredEvents = showGoingOnly
+    ? statusFilteredEvents.filter(e => Number(e.going_count || 0) > 0)
+    : statusFilteredEvents
+
   const eventsForDisplay = nearMeOnly && nearMeCoords
-    ? statusFilteredEvents
+    ? goingFilteredEvents
       .filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lng) && distanceMiles(nearMeCoords.lat, nearMeCoords.lng, e.lat, e.lng) <= RADIUS_MILES)
       .sort((a, b) => {
         const aStart = eventStartMs(a) ?? Number.POSITIVE_INFINITY
@@ -293,7 +298,7 @@ function AppInner() {
         return distanceMiles(nearMeCoords.lat, nearMeCoords.lng, a.lat, a.lng) -
           distanceMiles(nearMeCoords.lat, nearMeCoords.lng, b.lat, b.lng)
       })
-    : statusFilteredEvents
+    : goingFilteredEvents
 
   const upcomingCount = eventsForDisplay.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
 
@@ -984,6 +989,19 @@ function AppInner() {
           }}
         >
           {showCanceled ? '✓ Show Canceled' : 'Show Canceled'}
+        </button>
+        <button
+          onClick={() => setShowGoingOnly(p => !p)}
+          style={{
+            padding: '5px 14px', borderRadius: 20, border: '1px solid',
+            borderColor: showGoingOnly ? '#7CFF6B' : '#1A1A1A',
+            background: showGoingOnly ? '#0F2412' : 'transparent',
+            color: showGoingOnly ? '#9BFF8E' : '#444',
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {showGoingOnly ? '✓ Going Only' : 'Going Only'}
         </button>
 
         {/* spacer */}
