@@ -78,6 +78,7 @@ function AppInner() {
   const [activeCityFilter, setActiveCityFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showPast, setShowPast] = useState(false)
+  const [showCanceled, setShowCanceled] = useState(false)
   const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [savedEventIds, setSavedEventIds] = useState([])
   const [savedSyncAvailable, setSavedSyncAvailable] = useState(true)
@@ -273,14 +274,18 @@ function AppInner() {
     ? filtered.filter(e => savedEventIds.includes(e.id))
     : filtered
 
-  const eventsForDisplay = nearMeOnly && nearMeCoords
+  const statusFilteredEvents = showCanceled
     ? baseEvents
+    : baseEvents.filter(e => String(e.status || 'active').toLowerCase() !== 'canceled')
+
+  const eventsForDisplay = nearMeOnly && nearMeCoords
+    ? statusFilteredEvents
       .filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lng) && distanceMiles(nearMeCoords.lat, nearMeCoords.lng, e.lat, e.lng) <= RADIUS_MILES)
       .sort((a, b) => (
         distanceMiles(nearMeCoords.lat, nearMeCoords.lng, a.lat, a.lng) -
         distanceMiles(nearMeCoords.lat, nearMeCoords.lng, b.lat, b.lng)
       ))
-    : baseEvents
+    : statusFilteredEvents
 
   const upcomingCount = eventsForDisplay.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
 
@@ -838,6 +843,19 @@ function AppInner() {
           }}
         >
           {showSavedOnly ? `★ Saved (${savedEventIds.length})` : 'Saved'}
+        </button>
+        <button
+          onClick={() => setShowCanceled(p => !p)}
+          style={{
+            padding: '5px 14px', borderRadius: 20, border: '1px solid',
+            borderColor: showCanceled ? '#FF6060' : '#1A1A1A',
+            background: showCanceled ? '#2A1010' : 'transparent',
+            color: showCanceled ? '#FF7A7A' : '#444',
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {showCanceled ? '✓ Show Canceled' : 'Show Canceled'}
         </button>
 
         {/* spacer */}

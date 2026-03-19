@@ -3,6 +3,12 @@ import { supabase, fetchComments, postComment, toggleAttendance, getAttendanceSt
 import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
+const STATUS_META = {
+  active: { label: 'Active', fg: '#7CFF6B', bg: '#7CFF6B22' },
+  moved: { label: 'Moved', fg: '#00D4FF', bg: '#00D4FF22' },
+  delayed: { label: 'Delayed', fg: '#FFD700', bg: '#FFD70022' },
+  canceled: { label: 'Canceled', fg: '#FF6060', bg: '#FF353522' },
+}
 const getDirectionsUrl = (event) => {
   const query = (event?.address || `${event?.location || ''}, ${event?.city || ''}`).trim()
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
@@ -39,6 +45,8 @@ function EditModal({ event, user, onSaved, onCancel }) {
     description: event.description || '',
     tags: (event.tags || []).join(', '),
     host: event.host || '',
+    status: event.status || 'active',
+    status_note: event.status_note || '',
   })
   const [photo, setPhoto] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(event.photo_url || null)
@@ -73,6 +81,8 @@ function EditModal({ event, user, onSaved, onCancel }) {
         title: form.title, type: form.type, date: form.date, time: form.time,
         location: form.location, city: form.city, address: form.address,
         description: form.description, tags, host: form.host,
+        status: form.status,
+        status_note: form.status_note,
         lat: finalCoords?.lat || null, lng: finalCoords?.lng || null,
       }
       if (photo) {
@@ -123,6 +133,14 @@ function EditModal({ event, user, onSaved, onCancel }) {
 
               <label style={lbl}>Tags (comma separated)</label>
               <input style={inp} value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="JDM, Stance, All Welcome" />
+
+              <label style={lbl}>Event Status</label>
+              <select style={{ ...inp, appearance: 'none' }} value={form.status} onChange={e => set('status', e.target.value)}>
+                <option value="active">Active</option>
+                <option value="moved">Moved</option>
+                <option value="delayed">Delayed</option>
+                <option value="canceled">Canceled</option>
+              </select>
             </div>
 
             <div>
@@ -153,6 +171,9 @@ function EditModal({ event, user, onSaved, onCancel }) {
 
               <label style={lbl}>Details</label>
               <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="What's the vibe?" style={{ ...inp, resize: 'none' }} />
+
+              <label style={lbl}>Status Note</label>
+              <input style={inp} value={form.status_note} onChange={e => set('status_note', e.target.value)} placeholder="Optional: New address or timing update" />
             </div>
           </div>
 
@@ -185,6 +206,10 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const { isLight } = useTheme()
 
   const color = TYPE_COLORS[event.type] || '#FF6B35'
+  const statusKey = ['active', 'moved', 'delayed', 'canceled'].includes(String(event.status || '').toLowerCase())
+    ? String(event.status).toLowerCase()
+    : 'active'
+  const statusMeta = STATUS_META[statusKey]
   const directionsUrl = getDirectionsUrl(event)
   const isOwner = user && event.user_id === user.id
   const today = new Date().toISOString().split('T')[0]
@@ -283,7 +308,17 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
             {/* Left — event info */}
             <div style={{ flex: 1, padding: '24px 28px' }}>
               <span style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color, background: color + '22', padding: '3px 10px', borderRadius: 20, textTransform: 'capitalize' }}>{event.type}</span>
+              {statusKey !== 'active' && (
+                <span style={{ marginLeft: 8, fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color: statusMeta.fg, background: statusMeta.bg, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {statusMeta.label}
+                </span>
+              )}
               <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 2, marginTop: 10, marginBottom: 8, lineHeight: 1 }}>{event.title}</h1>
+              {statusKey !== 'active' && (
+                <div style={{ marginBottom: 10, border: `1px solid ${statusMeta.fg}66`, background: statusMeta.bg, color: statusMeta.fg, borderRadius: 8, padding: '8px 10px', fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 600 }}>
+                  {statusMeta.label}{event.status_note ? `: ${event.status_note}` : ''}
+                </div>
+              )}
 
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted, marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${event.time}` : ''}</div>
