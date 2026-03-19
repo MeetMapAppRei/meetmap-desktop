@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage } from './lib/supabase'
+import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents } from './lib/supabase'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
@@ -66,6 +66,7 @@ function AppInner() {
   const [showPast, setShowPast] = useState(false)
   const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [savedEventIds, setSavedEventIds] = useState([])
+  const [savedSyncAvailable, setSavedSyncAvailable] = useState(true)
   const [loading, setLoading] = useState(true)
   const [mapCenter, setMapCenter] = useState(null)
 
@@ -107,12 +108,47 @@ function AppInner() {
   }, [events, search, typeFilter])
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(getSavedEventsStorageKey(user))
-      const parsed = raw ? JSON.parse(raw) : []
-      setSavedEventIds(Array.isArray(parsed) ? parsed : [])
-    } catch {
-      setSavedEventIds([])
+    let active = true
+    const loadSavedEvents = async () => {
+      let localIds = []
+      try {
+        const raw = window.localStorage.getItem(getSavedEventsStorageKey(user))
+        const parsed = raw ? JSON.parse(raw) : []
+        localIds = Array.isArray(parsed) ? parsed : []
+      } catch {
+        localIds = []
+      }
+
+      // Anonymous users stay local-only.
+      if (!user) {
+        if (active) {
+          setSavedSyncAvailable(true)
+          setSavedEventIds(localIds)
+        }
+        return
+      }
+
+      try {
+        const cloudIds = await fetchSavedEventIds(user.id)
+        const merged = Array.from(new Set([...localIds, ...cloudIds]))
+        if (active) {
+          setSavedSyncAvailable(true)
+          setSavedEventIds(merged)
+        }
+        // Push any local IDs to cloud on first authenticated load.
+        await upsertSavedEvents(user.id, merged)
+      } catch (e) {
+        console.error('Saved events cloud sync unavailable:', e)
+        if (active) {
+          setSavedSyncAvailable(false)
+          setSavedEventIds(localIds)
+        }
+      }
+    }
+
+    loadSavedEvents()
+    return () => {
+      active = false
     }
   }, [user])
 
@@ -152,13 +188,24 @@ function AppInner() {
     if (event.lat && event.lng) setMapCenter({ lat: event.lat, lng: event.lng })
   }
 
-  const handleToggleSaved = (eventId) => {
+  const handleToggleSaved = async (eventId) => {
     if (!eventId) return
-    setSavedEventIds(prev => (
-      prev.includes(eventId)
-        ? prev.filter(id => id !== eventId)
-        : [eventId, ...prev]
-    ))
+    let shouldSave = false
+    setSavedEventIds(prev => {
+      const exists = prev.includes(eventId)
+      shouldSave = !exists
+      return exists ? prev.filter(id => id !== eventId) : [eventId, ...prev]
+    })
+
+    if (user && savedSyncAvailable) {
+      try {
+        await setSavedEventStatus(user.id, eventId, shouldSave)
+      } catch (e) {
+        console.error('Failed to sync saved event:', e)
+        // Gracefully continue with local persistence when backend table is missing.
+        setSavedSyncAvailable(false)
+      }
+    }
   }
 
   const toRad = (deg) => (deg * Math.PI) / 180
