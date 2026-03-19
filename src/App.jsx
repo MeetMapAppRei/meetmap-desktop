@@ -107,6 +107,14 @@ function AppInner() {
     setFiltered(result)
   }, [events, search, typeFilter])
 
+  // Allow homepage city links to open the app with a prefilled city search.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const cityParam = (params.get('city') || '').trim()
+    if (!cityParam) return
+    setSearch(cityParam)
+  }, [])
+
   useEffect(() => {
     let active = true
     const loadSavedEvents = async () => {
@@ -777,7 +785,7 @@ function AppInner() {
               {CITY_LINKS.map(city => (
                 <a
                   key={city.slug}
-                  href={`/car-meets-in-${city.slug}/`}
+                  href={`/?city=${encodeURIComponent(city.label)}`}
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: 11,
