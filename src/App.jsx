@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut } from './lib/supabase'
+import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus } from './lib/supabase'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
 import PostEventModal from './components/PostEventModal'
 import EventDetail from './components/EventDetail'
 import AuthModal from './components/AuthModal'
+import ImportQueueModal from './components/ImportQueueModal'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 
@@ -38,6 +39,13 @@ function AppInner() {
   const [nearMeOnly, setNearMeOnly] = useState(false)
   const [nearMeCoords, setNearMeCoords] = useState(null)
   const [nearMeError, setNearMeError] = useState('')
+
+  const [showImportQueue, setShowImportQueue] = useState(false)
+  const [imports, setImports] = useState([])
+  const [importsLoading, setImportsLoading] = useState(false)
+  const [approvingImportId, setApprovingImportId] = useState(null)
+  const [importProcessing, setImportProcessing] = useState(false)
+  const [importParams, setImportParams] = useState(null) // { sourceUrl, imageUrl }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
@@ -101,6 +109,14 @@ function AppInner() {
     return R * c
   }
 
+  async function geocodeAddress(address) {
+    if (!address || !address.trim()) return null
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`)
+    const data = await res.json()
+    if (!data.length) return null
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+  }
+
   const eventsForDisplay = nearMeOnly && nearMeCoords
     ? filtered
       .filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lng) && distanceMiles(nearMeCoords.lat, nearMeCoords.lng, e.lat, e.lng) <= RADIUS_MILES)
@@ -131,6 +147,137 @@ function AppInner() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5 * 60 * 1000 }
     )
+  }
+
+  const loadPendingImports = async () => {
+    if (!user) return
+    setImportsLoading(true)
+    try {
+      const data = await fetchFlyerImports(user.id, 'pending')
+      setImports(data || [])
+    } catch (e) {
+      console.error('Failed to load flyer imports:', e)
+    } finally {
+      setImportsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const importFlag = params.get('import')
+    if (importFlag !== '1') return
+
+    const sourceUrl = params.get('sourceUrl') || ''
+    const imageUrl = params.get('imageUrl') || ''
+    if (!sourceUrl || !imageUrl) return
+
+    setImportParams({ sourceUrl, imageUrl })
+    setShowImportQueue(true)
+  }, [])
+
+  useEffect(() => {
+    if (!importParams) return
+    if (!user) setShowAuth(true)
+  }, [importParams, user])
+
+  useEffect(() => {
+    if (!showImportQueue) return
+    if (!user) return
+    loadPendingImports()
+  }, [showImportQueue, user])
+
+  useEffect(() => {
+    if (!importParams) return
+    if (!user) return
+    if (!showImportQueue) return
+
+    let cancelled = false
+    const run = async () => {
+      setImportProcessing(true)
+      try {
+        const resp = await fetch('/api/extract-flyer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: importParams.imageUrl, sourceUrl: importParams.sourceUrl }),
+        })
+        const json = await resp.json()
+        if (!resp.ok) throw new Error(json.error || 'Extraction failed')
+        if (!json?.extracted) throw new Error('No extracted data returned')
+
+        await createFlyerImport({
+          userId: user.id,
+          sourceUrl: importParams.sourceUrl,
+          imageUrl: importParams.imageUrl,
+          extracted: json.extracted,
+        })
+
+        if (!cancelled) {
+          setImportParams(null)
+          window.history.replaceState({}, '', window.location.pathname)
+          await loadPendingImports()
+        }
+      } catch (e) {
+        console.error('Import processing failed:', e)
+      } finally {
+        if (!cancelled) setImportProcessing(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [importParams, user, showImportQueue])
+
+  const handleApproveImport = async (imp) => {
+    if (!user || !imp) return
+    setApprovingImportId(imp.id)
+    try {
+      const required = ['title', 'type', 'date', 'location', 'city']
+      const ready = required.every(k => typeof imp?.[k] === 'string' ? imp[k].trim().length > 0 : !!imp?.[k])
+      if (!ready) return
+
+      let coords = null
+      const query = imp.address?.trim() ? imp.address : `${imp.location || ''}, ${imp.city || ''}`.trim()
+      if (query) coords = await geocodeAddress(query).catch(() => null)
+
+      const tags = Array.isArray(imp.tags) ? imp.tags : []
+
+      const created = await createEvent({
+        title: imp.title,
+        type: imp.type,
+        date: imp.date,
+        time: imp.time || null,
+        location: imp.location,
+        city: imp.city,
+        address: imp.address || null,
+        description: imp.description || null,
+        tags,
+        host: imp.host || null,
+        lat: coords?.lat || null,
+        lng: coords?.lng || null,
+        photo_url: imp.image_url || null,
+      }, user.id)
+
+      await updateFlyerImportStatus(imp.id, 'approved')
+      setEvents(prev => [created, ...prev])
+      setSelectedEvent(created)
+      setShowImportQueue(false)
+    } catch (e) {
+      console.error('Approve failed:', e)
+    } finally {
+      setApprovingImportId(null)
+    }
+  }
+
+  const handleRejectImport = async (imp) => {
+    if (!user || !imp) return
+    try {
+      await updateFlyerImportStatus(imp.id, 'rejected')
+      await loadPendingImports()
+    } catch (e) {
+      console.error('Reject failed:', e)
+    }
   }
 
   return (
@@ -189,6 +336,30 @@ function AppInner() {
           }}
         >
           {isLight ? 'Light' : 'Dark'}
+        </button>
+
+        {/* Imports (flyer queue) */}
+        <button
+          onClick={() => {
+            if (user) setShowImportQueue(true)
+            else setShowAuth(true)
+          }}
+          style={{
+            background: isLight ? '#FFFFFF' : 'none',
+            border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+            borderRadius: 10,
+            padding: '8px 12px',
+            color: isLight ? '#444' : '#555',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            fontWeight: 900,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: 0.3,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Imports
         </button>
 
         {/* Type filters */}
@@ -336,6 +507,16 @@ function AppInner() {
           user={user}
           onClose={() => setShowPost(false)}
           onPosted={handleEventAdded}
+        />
+      )}
+      {showImportQueue && (
+        <ImportQueueModal
+          imports={imports}
+          loading={importsLoading || importProcessing}
+          approvingId={approvingImportId}
+          onApprove={handleApproveImport}
+          onReject={handleRejectImport}
+          onClose={() => setShowImportQueue(false)}
         />
       )}
       {showAuth && (
