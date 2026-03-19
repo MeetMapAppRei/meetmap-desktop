@@ -113,6 +113,10 @@ function AppInner() {
   const [importUploading, setImportUploading] = useState(false)
   const canAccessImports = isImportAdminUser(user)
 
+  const topBtnBorder = isLight ? '#E5E5E5' : '#1E1E1E'
+  const topBtnColor = isLight ? '#444' : '#555'
+  const topBtnBg = isLight ? '#FFFFFF' : 'none'
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null))
@@ -128,9 +132,11 @@ function AppInner() {
     let result = events
     if (typeFilter !== 'all') result = result.filter(e => e.type === typeFilter)
     if (search) result = result.filter(e =>
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.city.toLowerCase().includes(search.toLowerCase()) ||
-      (e.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
+      String(e.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      String(e.city || '').toLowerCase().includes(search.toLowerCase()) ||
+      String(e.location || '').toLowerCase().includes(search.toLowerCase()) ||
+      String(e.address || '').toLowerCase().includes(search.toLowerCase()) ||
+      (Array.isArray(e.tags) ? e.tags : []).some(t => String(t || '').toLowerCase().includes(search.toLowerCase()))
     )
     setFiltered(result)
   }, [events, search, typeFilter])
@@ -861,9 +867,9 @@ function AppInner() {
         <button
           onClick={toggleTheme}
           style={{
-            background: isLight ? '#FFFFFF' : 'none',
-            border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
-            color: isLight ? '#444' : '#555',
+            background: topBtnBg,
+            border: `1px solid ${topBtnBorder}`,
+            color: topBtnColor,
             borderRadius: 10,
             padding: '8px 12px',
             fontFamily: "'DM Sans', sans-serif",
@@ -880,14 +886,14 @@ function AppInner() {
         <button
           onClick={handleEnableNotifications}
           style={{
-            background: isLight ? '#FFFFFF' : 'none',
-            border: `1px solid ${notificationPermission === 'granted' ? '#FF6B35' : (isLight ? '#E5E5E5' : '#1E1E1E')}`,
-            color: notificationPermission === 'granted' ? '#FF8A5C' : (isLight ? '#444' : '#555'),
+            background: topBtnBg,
+            border: `1px solid ${topBtnBorder}`,
+            color: topBtnColor,
             borderRadius: 10,
             padding: '8px 12px',
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 800,
             cursor: 'pointer',
             whiteSpace: 'nowrap',
           }}
@@ -901,14 +907,14 @@ function AppInner() {
           <button
             onClick={() => setShowImportQueue(true)}
             style={{
-              background: isLight ? '#FFFFFF' : 'none',
-              border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+              background: topBtnBg,
+              border: `1px solid ${topBtnBorder}`,
               borderRadius: 10,
               padding: '8px 12px',
-              color: isLight ? '#444' : '#555',
+              color: topBtnColor,
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 12,
-              fontWeight: 900,
+              fontWeight: 800,
               cursor: 'pointer',
               textTransform: 'uppercase',
               letterSpacing: 0.3,
@@ -924,14 +930,14 @@ function AppInner() {
           <button
             onClick={() => setShowModerationQueue(true)}
             style={{
-              background: isLight ? '#FFFFFF' : 'none',
-              border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+              background: topBtnBg,
+              border: `1px solid ${topBtnBorder}`,
               borderRadius: 10,
               padding: '8px 12px',
-              color: isLight ? '#444' : '#555',
+              color: topBtnColor,
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 12,
-              fontWeight: 900,
+              fontWeight: 800,
               cursor: 'pointer',
               textTransform: 'uppercase',
               letterSpacing: 0.3,
@@ -1091,17 +1097,63 @@ function AppInner() {
             <button
               onClick={() => setShowPost(true)}
               style={{
-                background: '#FF6B35', color: '#0A0A0A', border: 'none', borderRadius: 8,
-                padding: '8px 18px', fontFamily: "'Bebas Neue', sans-serif",
+                background: '#FF6B35', color: '#0A0A0A', border: 'none', borderRadius: 10,
+                padding: '8px 12px', fontFamily: "'Bebas Neue', sans-serif",
                 fontSize: 16, letterSpacing: 1.5, cursor: 'pointer',
               }}
             >+ POST EVENT</button>
-            <button onClick={() => signOut()} style={{ background: 'none', border: '1px solid #222', borderRadius: 8, padding: '7px 14px', color: '#555', fontSize: 12, cursor: 'pointer' }}>Sign Out</button>
+            <button
+              onClick={() => signOut()}
+              style={{
+                background: topBtnBg,
+                border: `1px solid ${topBtnBorder}`,
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: topBtnColor,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                cursor: 'pointer',
+                fontWeight: 800,
+              }}
+            >
+              Sign Out
+            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setShowAuth(true)} style={{ background: 'none', border: '1px solid #222', borderRadius: 8, padding: '7px 16px', color: '#888', fontSize: 13, cursor: 'pointer' }}>Log In</button>
-            <button onClick={() => setShowAuth(true)} style={{ background: '#FF6B35', border: 'none', borderRadius: 8, padding: '8px 18px', color: '#0A0A0A', fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1.5, cursor: 'pointer' }}>JOIN FREE</button>
+            <button
+              onClick={() => setShowAuth(true)}
+              style={{
+                background: topBtnBg,
+                border: `1px solid ${topBtnBorder}`,
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: topBtnColor,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                cursor: 'pointer',
+                fontWeight: 800,
+                textTransform: 'capitalize',
+              }}
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => setShowAuth(true)}
+              style={{
+                background: '#FF6B35',
+                border: 'none',
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: '#0A0A0A',
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 16,
+                letterSpacing: 1.5,
+                cursor: 'pointer',
+              }}
+            >
+              JOIN FREE
+            </button>
           </div>
         )}
       </nav>
