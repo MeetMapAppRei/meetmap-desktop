@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase, fetchComments, postComment, getEventRsvpStatus, setEventRsvp, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
 import { useTheme } from '../lib/ThemeContext'
+import { getEventQuality } from '../lib/eventQuality'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -214,6 +215,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
     ? String(event.status).toLowerCase()
     : 'active'
   const statusMeta = STATUS_META[statusKey]
+  const quality = getEventQuality(event)
   const directionsUrl = getDirectionsUrl(event)
   const isOwner = user && event.user_id === user.id
   const today = new Date().toISOString().split('T')[0]
@@ -344,6 +346,25 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
               {statusKey !== 'active' && (
                 <span style={{ marginLeft: 8, fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color: statusMeta.fg, background: statusMeta.bg, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   {statusMeta.label}
+                </span>
+              )}
+              {quality && (
+                <span
+                  style={{
+                    marginLeft: 8,
+                    fontFamily: "'DM Sans'",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: quality.fg,
+                    background: quality.bg,
+                    padding: '3px 10px',
+                    borderRadius: 20,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                  title={`${quality.label} (${quality.score}/100)`}
+                >
+                  {quality.short}
                 </span>
               )}
               <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 2, marginTop: 10, marginBottom: 8, lineHeight: 1 }}>{event.title}</h1>

@@ -1,4 +1,5 @@
 import { useTheme } from '../lib/ThemeContext'
+import { getEventQuality } from '../lib/eventQuality'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -32,6 +33,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
     const directionsUrl = getDirectionsUrl(event)
     const statusKey = String(event.status || 'active').toLowerCase()
     const statusMeta = STATUS_META[statusKey]
+    const quality = getEventQuality(event)
 
     return (
       <div
@@ -74,6 +76,24 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
               {statusMeta && (
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, color: statusMeta.fg, background: statusMeta.bg, borderRadius: 999, padding: '2px 7px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                   {statusMeta.label}
+                </span>
+              )}
+              {quality && (
+                <span
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: quality.fg,
+                    background: quality.bg,
+                    borderRadius: 999,
+                    padding: '2px 7px',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.4,
+                  }}
+                  title={`${quality.label} (${quality.score}/100)`}
+                >
+                  {quality.short}
                 </span>
               )}
               <button
