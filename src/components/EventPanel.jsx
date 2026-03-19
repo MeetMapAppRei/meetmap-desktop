@@ -1,6 +1,10 @@
 import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
+const getDirectionsUrl = (event) => {
+  const query = (event?.address || `${event?.location || ''}, ${event?.city || ''}`).trim()
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+}
 
 export default function EventPanel({ events, loading, selectedEvent, onEventClick, onHover, savedEventIds = [], onToggleSaved }) {
   const { isLight } = useTheme()
@@ -19,6 +23,7 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
     const isPast = event.date < today
     const attendeeCount = event.event_attendees?.[0]?.count || 0
     const isSaved = savedEventIds.includes(event.id)
+    const directionsUrl = getDirectionsUrl(event)
 
     return (
       <div
@@ -97,11 +102,31 @@ export default function EventPanel({ events, loading, selectedEvent, onEventClic
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#D1491A' : color, fontWeight: 700 }}>
                 {formatDate(event.date)}{event.time ? ` · ${event.time}` : ''}
               </span>
-              {attendeeCount > 0 && (
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#2C2C2C' : '#B8B8B8' }}>
-                  {attendeeCount} going
-                </span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {attendeeCount > 0 && (
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: isLight ? '#2C2C2C' : '#B8B8B8' }}>
+                    {attendeeCount} going
+                  </span>
+                )}
+                <a
+                  href={directionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 10,
+                    color: isLight ? '#D1491A' : '#FF8A5C',
+                    border: `1px solid ${isLight ? '#F0C3B3' : '#3A241C'}`,
+                    borderRadius: 999,
+                    padding: '2px 7px',
+                    textDecoration: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Directions
+                </a>
+              </div>
             </div>
           </div>
         </div>

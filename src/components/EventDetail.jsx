@@ -3,6 +3,10 @@ import { supabase, fetchComments, postComment, toggleAttendance, getAttendanceSt
 import { useTheme } from '../lib/ThemeContext'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
+const getDirectionsUrl = (event) => {
+  const query = (event?.address || `${event?.location || ''}, ${event?.city || ''}`).trim()
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+}
 
 const inp = {
   width: '100%', background: '#141414', border: '1px solid #1E1E1E',
@@ -181,6 +185,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const { isLight } = useTheme()
 
   const color = TYPE_COLORS[event.type] || '#FF6B35'
+  const directionsUrl = getDirectionsUrl(event)
   const isOwner = user && event.user_id === user.id
   const today = new Date().toISOString().split('T')[0]
   const isPast = event.date < today
@@ -318,6 +323,25 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
                 <button onClick={handleShare} style={{ flex: 1, background: shareBg, color: copied ? '#7CFF6B' : shareText, border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 15, cursor: 'pointer' }}>
                   {copied ? '✓ COPIED!' : '🔗 SHARE'}
                 </button>
+                <a
+                  href={directionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    flex: 1,
+                    background: shareBg,
+                    color: isLight ? '#D1491A' : '#FF8A5C',
+                    border: `1px solid ${shareBorder}`,
+                    borderRadius: 8,
+                    padding: 12,
+                    fontFamily: "'Bebas Neue'",
+                    fontSize: 15,
+                    textDecoration: 'none',
+                    textAlign: 'center',
+                  }}
+                >
+                  📍 DIRECTIONS
+                </a>
               </div>
 
               {/* Owner controls */}
