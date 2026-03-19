@@ -262,9 +262,14 @@ export default function EventDetail({ event: initialEvent, user, onClose, onAuth
         <div style={{ width: '100%', maxWidth: 720, background: panelBg, borderRadius: 16, border: `1px solid ${panelBorder}`, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
 
           {/* Hero */}
-          <div style={{ position: 'relative', height: event.photo_url ? 260 : 'auto' }}>
-            {event.photo_url && <img src={event.photo_url} style={{ width: '100%', height: 260, objectFit: 'cover' }} alt="" />}
-            {event.photo_url && <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, ${isLight ? '#FFFFFF' : '#0F0F0F'} 0%, transparent 50%)` }} />}
+          <div style={{ position: 'relative', height: event.photo_url ? 320 : 'auto', background: isLight ? '#F2F2F2' : '#0B0B0B' }}>
+            {event.photo_url && (
+              <img
+                src={event.photo_url}
+                style={{ width: '100%', height: 320, objectFit: 'contain', background: isLight ? '#F2F2F2' : '#0B0B0B' }}
+                alt=""
+              />
+            )}
             <div style={{ height: 4, background: color }} />
             <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: closeBg, border: 'none', color: closeColor, fontSize: 20, width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
