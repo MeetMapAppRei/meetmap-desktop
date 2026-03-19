@@ -846,7 +846,7 @@ function AppInner() {
         </div>
 
         {/* Search */}
-        <div style={{ flex: 1, maxWidth: 360, position: 'relative' }}>
+        <div style={{ flex: 1, maxWidth: 360, minWidth: 220, position: 'relative' }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: isLight ? '#444' : '#444' }}>🔍</span>
           <input
             value={search}
@@ -856,9 +856,16 @@ function AppInner() {
             }}
             placeholder="Search events, city, tags..."
             style={{
-              width: '100%', background: isLight ? '#FFFFFF' : '#141414', border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
-              borderRadius: 8, padding: '8px 12px 8px 34px', color: isLight ? '#222' : '#F0F0F0',
-              fontSize: 13, outline: 'none',
+              width: '100%',
+              height: 36,
+              background: isLight ? '#FFFFFF' : '#141414',
+              border: `1px solid ${isLight ? '#E5E5E5' : '#1E1E1E'}`,
+              borderRadius: 10,
+              padding: '0 12px 0 36px',
+              color: isLight ? '#222' : '#F0F0F0',
+              fontSize: 14,
+              outline: 'none',
+              cursor: 'text',
             }}
           />
         </div>
