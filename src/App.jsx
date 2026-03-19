@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus } from './lib/supabase'
+import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport } from './lib/supabase'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
@@ -280,6 +280,43 @@ function AppInner() {
     }
   }
 
+  const handleUpdateImport = async (importId, nextDraft) => {
+    if (!user || !importId || !nextDraft) return
+    const tags = (nextDraft.tagsText || '')
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
+    const tagsText = (nextDraft.tagsText || '').trim()
+
+    const updates = {
+      title: nextDraft.title?.trim() || null,
+      type: nextDraft.type?.trim() || null,
+      date: nextDraft.date?.trim() || null,
+      time: nextDraft.time?.trim() || null,
+      location: nextDraft.location?.trim() || null,
+      city: nextDraft.city?.trim() || null,
+      address: nextDraft.address?.trim() || null,
+      host: nextDraft.host?.trim() || null,
+      description: nextDraft.description?.trim() || null,
+      tags,
+      extracted: {
+        title: nextDraft.title || '',
+        type: nextDraft.type || '',
+        date: nextDraft.date || '',
+        time: nextDraft.time || '',
+        location: nextDraft.location || '',
+        address: nextDraft.address || '',
+        city: nextDraft.city || '',
+        host: nextDraft.host || '',
+        description: nextDraft.description || '',
+        tags: tagsText,
+      },
+    }
+
+    await updateFlyerImport(importId, updates)
+    await loadPendingImports()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: isLight ? '#F6F6F6' : '#0A0A0A', overflow: 'hidden' }}>
 
@@ -516,6 +553,7 @@ function AppInner() {
           approvingId={approvingImportId}
           onApprove={handleApproveImport}
           onReject={handleRejectImport}
+          onUpdateImport={handleUpdateImport}
           onClose={() => setShowImportQueue(false)}
         />
       )}
