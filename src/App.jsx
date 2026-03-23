@@ -66,7 +66,8 @@ function AppInner() {
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(ua)
     const isMobileSite = window.location.hostname === 'meetmap-gilt.vercel.app'
     if (!isBot && isMobile && !isMobileSite) {
-      window.location.href = 'https://meetmap-gilt.vercel.app'
+      const { pathname, search, hash } = window.location
+      window.location.href = `https://meetmap-gilt.vercel.app${pathname}${search}${hash}`
     }
   }, [])
 
