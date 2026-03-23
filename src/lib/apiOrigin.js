@@ -4,7 +4,8 @@
 export function getAppOrigin() {
   const raw = import.meta.env.VITE_APP_ORIGIN
   if (raw == null || String(raw).trim() === '') {
-    return 'https://findcarmeets.com'
+    // On web, keep API calls same-origin to avoid CORS issues.
+    return ''
   }
   return String(raw).replace(/\/$/, '')
 }
