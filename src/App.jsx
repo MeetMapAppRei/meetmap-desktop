@@ -121,6 +121,9 @@ function AppInner() {
   const navBtnHeight = 36
   const navBtnPaddingX = 12
   const navBtnBorderRadius = 10
+  const filterChipBg = isLight ? '#F2F2F2' : '#1A1A1A'
+  const filterChipBorder = isLight ? '#E5E5E5' : '#2A2A2A'
+  const filterChipText = isLight ? '#4A4A4A' : '#A8A8A8'
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
@@ -1012,8 +1015,8 @@ function AppInner() {
               padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
               textTransform: 'capitalize', letterSpacing: 0.3,
-              background: typeFilter === 'all' ? (TYPE_COLORS.all || '#FF6B35') : '#141414',
-              color: typeFilter === 'all' ? '#0A0A0A' : '#555',
+              background: typeFilter === 'all' ? (TYPE_COLORS.all || '#FF6B35') : filterChipBg,
+              color: typeFilter === 'all' ? '#0A0A0A' : filterChipText,
               transition: 'all 0.15s',
             }}
           >
@@ -1028,11 +1031,11 @@ function AppInner() {
             }}
             style={{
               padding: '5px 14px', borderRadius: 20, border: '1px solid',
-              borderColor: nearMeOnly ? '#FF6B35' : '#1E1E1E',
-              background: nearMeOnly ? '#222' : '#141414',
+              borderColor: nearMeOnly ? '#FF6B35' : filterChipBorder,
+              background: nearMeOnly ? (isLight ? '#FFF3ED' : '#222') : filterChipBg,
               cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-              color: nearMeOnly ? '#aaa' : '#555',
+              color: nearMeOnly ? (isLight ? '#D1491A' : '#aaa') : filterChipText,
               textTransform: 'uppercase',
               letterSpacing: 0.3,
               transition: 'all 0.15s',
@@ -1049,8 +1052,8 @@ function AppInner() {
                 padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
                 fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
                 textTransform: 'capitalize', letterSpacing: 0.3,
-                background: typeFilter === t ? (TYPE_COLORS[t] || '#FF6B35') : '#141414',
-                color: typeFilter === t ? '#0A0A0A' : '#555',
+                background: typeFilter === t ? (TYPE_COLORS[t] || '#FF6B35') : filterChipBg,
+                color: typeFilter === t ? '#0A0A0A' : filterChipText,
                 transition: 'all 0.15s',
               }}
             >
