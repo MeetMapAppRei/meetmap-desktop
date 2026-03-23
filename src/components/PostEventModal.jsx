@@ -2,10 +2,30 @@ import { useState, useRef } from 'react'
 import { createEvent, uploadEventPhoto } from '../lib/supabase'
 
 async function geocodeAddress(address) {
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`)
-  const data = await res.json()
-  if (!data.length) return null
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+  if (!address || !String(address).trim()) return null
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(String(address).trim())}&format=json&limit=1`
+  let lastErr
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * attempt))
+      const res = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'MeetMap/1.0 (https://findcarmeets.com)',
+        },
+      })
+      if (!res.ok) {
+        lastErr = new Error(`Geocoding failed (${res.status})`)
+        continue
+      }
+      const data = await res.json()
+      if (!Array.isArray(data) || !data.length) return null
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr
 }
 
 async function extractFlyerInfo(imageBase64, mediaType = "image/jpeg") {
