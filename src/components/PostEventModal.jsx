@@ -37,10 +37,51 @@ If a field is not found, use empty string. For date, convert to YYYY-MM-DD forma
       }]
     })
   })
-  const data = await response.json()
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    const err =
+      data?.error?.message ||
+      data?.error ||
+      data?.message ||
+      response.statusText ||
+      `Request failed (${response.status})`
+    throw new Error(err)
+  }
   const text = data.content?.[0]?.text || ''
   const clean = text.replace(/```json|```/g, '').trim()
-  return JSON.parse(clean)
+  if (!text) {
+    const raw = (() => {
+      try {
+        return JSON.stringify(data)
+      } catch {
+        return String(data)
+      }
+    })()
+    const snippet = raw.replace(/\s+/g, ' ').slice(0, 220)
+    throw new Error(`AI response missing content text. Response snippet: "${snippet}"`)
+  }
+
+  const parseJsonFromText = (candidate) => {
+    try {
+      return JSON.parse(candidate)
+    } catch {}
+    const firstBrace = candidate.indexOf('{')
+    const lastBrace = candidate.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const sub = candidate.slice(firstBrace, lastBrace + 1)
+      return JSON.parse(sub)
+    }
+    throw new Error('AI response was not valid JSON.')
+  }
+
+  try {
+    return parseJsonFromText(clean)
+  } catch (e) {
+    const snippet = String(clean || '')
+      .replace(/\s+/g, ' ')
+      .slice(0, 180)
+    throw new Error(`AI returned an unexpected response. Snippet: "${snippet}"`)
+  }
 }
 
 const inp = {
@@ -75,6 +116,10 @@ export default function PostEventModal({ user, onClose, onPosted }) {
     if (!file) return
     setScanning(true); setError(''); setFlyerSuccess(false)
     try {
+      if (file.size > 8 * 1024 * 1024) {
+        throw new Error('That flyer file is too large for AI extraction. Try a smaller/cropped image (under ~8MB).')
+      }
+
       const mediaType = file.type || 'image/jpeg'
       const base64 = await new Promise((resolve, reject) => {
         const reader = new FileReader()
@@ -83,6 +128,9 @@ export default function PostEventModal({ user, onClose, onPosted }) {
         reader.readAsDataURL(file)
       })
       const info = await extractFlyerInfo(base64, mediaType)
+      // Treat flyer image as the event photo by default.
+      setPhoto(file)
+      setPhotoPreview(URL.createObjectURL(file))
       setForm(prev => ({
         ...prev,
         title: info.title || prev.title,
@@ -102,7 +150,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
         if (result) { setCoords(result); setAddressStatus('found') }
       }
     } catch (e) {
-      setError('Could not read flyer. Try a clearer image or fill in manually.')
+      setError(e?.message || 'Could not read flyer. Try a clearer image or fill in manually.')
     } finally {
       setScanning(false)
     }

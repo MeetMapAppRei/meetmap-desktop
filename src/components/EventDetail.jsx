@@ -277,7 +277,22 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   }
 
   const handleShare = async () => {
-    try { await navigator.clipboard.writeText(window.location.href) } catch {}
+    const url = new URL(window.location.href)
+    url.searchParams.set('event', event.id)
+    const eventUrl = url.toString()
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: event.title || 'Meet Map event',
+          text: event.title || 'Check out this event on Meet Map',
+          url: eventUrl,
+        })
+      } else {
+        await navigator.clipboard.writeText(eventUrl)
+      }
+    } catch {
+      try { await navigator.clipboard.writeText(eventUrl) } catch {}
+    }
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
   }

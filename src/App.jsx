@@ -111,6 +111,7 @@ function AppInner() {
   const [importParams, setImportParams] = useState(null) // { sourceUrl, imageUrl }
   const [importError, setImportError] = useState(null)
   const [importUploading, setImportUploading] = useState(false)
+  const [sharedEventId, setSharedEventId] = useState(null)
   const canAccessImports = isImportAdminUser(user)
 
   const topBtnBorder = isLight ? '#E5E5E5' : '#1E1E1E'
@@ -148,12 +149,25 @@ function AppInner() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const cityParam = (params.get('city') || '').trim()
+    const eventParam = (params.get('event') || '').trim()
+    if (eventParam) setSharedEventId(eventParam)
     if (!cityParam) return
     setSearch(cityParam)
     setActiveCityFilter(cityParam)
-    // Keep URL clean so users are not stuck in a hidden filter.
-    window.history.replaceState({}, '', window.location.pathname)
+    // Remove only city query and keep event deep-link if present.
+    const next = new URL(window.location.href)
+    next.searchParams.delete('city')
+    window.history.replaceState({}, '', `${next.pathname}${next.search}`)
   }, [])
+
+  useEffect(() => {
+    if (!sharedEventId || !Array.isArray(events) || events.length === 0) return
+    const match = events.find(e => e.id === sharedEventId)
+    if (!match) return
+    setSelectedEvent(match)
+    if (match.lat && match.lng) setMapCenter({ lat: match.lat, lng: match.lng })
+    setSharedEventId(null)
+  }, [sharedEventId, events])
 
   useEffect(() => {
     let active = true
@@ -239,6 +253,20 @@ function AppInner() {
   const handleEventClick = (event) => {
     setSelectedEvent(event)
     if (event.lat && event.lng) setMapCenter({ lat: event.lat, lng: event.lng })
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('event', event.id)
+      window.history.replaceState({}, '', `${url.pathname}${url.search}`)
+    } catch {}
+  }
+
+  const handleCloseEventDetail = () => {
+    setSelectedEvent(null)
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('event')
+      window.history.replaceState({}, '', `${url.pathname}${url.search}`)
+    } catch {}
   }
 
   const handleToggleSaved = async (eventId) => {
@@ -1282,7 +1310,7 @@ function AppInner() {
           user={user}
           saved={savedEventIds.includes(selectedEvent.id)}
           onToggleSaved={() => handleToggleSaved(selectedEvent.id)}
-          onClose={() => setSelectedEvent(null)}
+          onClose={handleCloseEventDetail}
           onAuthNeeded={() => setShowAuth(true)}
           onDeleted={handleEventDeleted}
           onUpdated={handleEventUpdated}
