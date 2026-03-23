@@ -118,6 +118,7 @@ const lbl = {
 export default function PostEventModal({ user, onClose, onPosted }) {
   const fileRef = useRef()
   const flyerRef = useRef()
+  const submitGuardRef = useRef(false)
   const [form, setForm] = useState({ title: '', type: 'meet', date: '', time: '', location: '', city: '', address: '', description: '', tags: '', host: '' })
   const [coords, setCoords] = useState(null)
   const [photo, setPhoto] = useState(null)
@@ -187,6 +188,8 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
   const handleSubmit = async () => {
     if (!form.title || !form.date || !form.location || !form.city) { setError('Please fill in all required fields.'); return }
+    if (submitGuardRef.current) return
+    submitGuardRef.current = true
     setError(''); setLoading(true)
     try {
       let finalCoords = coords
@@ -300,8 +303,8 @@ export default function PostEventModal({ user, onClose, onPosted }) {
             </div>
           </div>
 
-          <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', background: loading ? '#222' : '#FF6B35', color: loading ? '#555' : '#0A0A0A', border: 'none', borderRadius: 10, padding: 14, fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, cursor: loading ? 'default' : 'pointer', marginTop: 8 }}>
-            {loading ? 'POSTING...' : 'DROP THE PIN 📍'}
+          <button type="button" onClick={handleSubmit} disabled={loading || scanning} style={{ width: '100%', background: loading || scanning ? '#222' : '#FF6B35', color: loading || scanning ? '#555' : '#0A0A0A', border: 'none', borderRadius: 10, padding: 14, fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2, cursor: loading || scanning ? 'default' : 'pointer', marginTop: 8 }}>
+            {loading ? 'POSTING...' : scanning ? 'READING FLYER...' : 'DROP THE PIN 📍'}
           </button>
         </div>
       </div>
