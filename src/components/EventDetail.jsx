@@ -227,8 +227,10 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const overlayBg = isLight ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.85)'
   const panelBg = isLight ? '#FFFFFF' : '#0F0F0F'
   const panelBorder = isLight ? '#E5E5E5' : '#1A1A1A'
+  const titleText = isLight ? '#1E1E1E' : '#F2F2F2'
+  const bodyText = isLight ? '#2F2F2F' : '#D8D8D8'
   const muted = isLight ? '#666' : '#888'
-  const muted2 = isLight ? '#666' : '#777'
+  const muted2 = isLight ? '#4F4F4F' : '#B8B8B8'
   const divider = isLight ? '#E5E5E5' : '#141414'
   const closeBg = isLight ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.7)'
   const closeColor = isLight ? '#333' : '#fff'
@@ -359,7 +361,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex' }}>
             {/* Left — event info */}
-            <div style={{ flex: 1, padding: '24px 28px' }}>
+            <div style={{ flex: 1, padding: '24px 28px', color: bodyText }}>
               <span style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color, background: color + '22', padding: '3px 10px', borderRadius: 20, textTransform: 'capitalize' }}>{event.type}</span>
               {statusKey !== 'active' && (
                 <span style={{ marginLeft: 8, fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 700, color: statusMeta.fg, background: statusMeta.bg, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -385,16 +387,16 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
                   {quality.short}
                 </span>
               )}
-              <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 2, marginTop: 10, marginBottom: 8, lineHeight: 1 }}>{event.title}</h1>
+              <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 2, marginTop: 10, marginBottom: 8, lineHeight: 1, color: titleText }}>{event.title}</h1>
               {statusKey !== 'active' && (
                 <div style={{ marginBottom: 10, border: `1px solid ${statusMeta.fg}66`, background: statusMeta.bg, color: statusMeta.fg, borderRadius: 8, padding: '8px 10px', fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 600 }}>
                   {statusMeta.label}{event.status_note ? `: ${event.status_note}` : ''}
                 </div>
               )}
 
-              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted, marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
+              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted2, marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${formatEventTime(event.time)}` : ''}</div>
-              {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: muted, marginBottom: 14 }}>🎤 Hosted by <span style={{ color: isLight ? '#888' : '#aaa' }}>{event.host}</span></div>}
+              {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: muted2, marginBottom: 14 }}>🎤 Hosted by <span style={{ color: isLight ? '#353535' : '#E0E0E0' }}>{event.host}</span></div>}
 
               {event.tags?.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
