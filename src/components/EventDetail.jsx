@@ -239,7 +239,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const inputText = isLight ? '#222' : '#F0F0F0'
   const shareBg = isLight ? '#F2F2F2' : '#141414'
   const shareBorder = isLight ? '#E5E5E5' : '#222'
-  const shareText = isLight ? '#666' : '#888'
+  const shareText = isLight ? '#474747' : '#888'
 
   useEffect(() => {
     fetchComments(event.id).then(setComments).catch(console.error)
@@ -400,7 +400,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
               {event.tags?.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  {event.tags.map(t => <span key={t} style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: `1px solid ${color}44`, color, background: color + '0D', margin: '2px', fontFamily: "'DM Sans'" }}>{t}</span>)}
+                  {event.tags.map(t => <span key={t} style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: `1px solid ${color}55`, color: isLight ? '#D1491A' : color, background: color + '1A', margin: '2px', fontFamily: "'DM Sans'" }}>{t}</span>)}
                 </div>
               )}
 
@@ -513,7 +513,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
                   <div style={{ display: 'flex', gap: 10 }}>
                   <button
                     onClick={() => setEditing(true)}
-                    style={{ flex: 1, background: shareBg, color: isLight ? '#666' : '#888', border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
+                    style={{ flex: 1, background: shareBg, color: isLight ? '#444' : '#888', border: `1px solid ${shareBorder}`, borderRadius: 8, padding: 10, fontFamily: "'Bebas Neue'", fontSize: 14, cursor: 'pointer', letterSpacing: 1 }}
                   >
                     ✏️ EDIT EVENT
                   </button>
@@ -540,7 +540,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
             {/* Right — comments */}
             <div style={{ width: 280, borderLeft: `1px solid ${divider}`, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '20px 16px 12px', fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2, color: isLight ? '#444' : '#444', borderBottom: `1px solid ${divider}` }}>
+              <div style={{ padding: '20px 16px 12px', fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 2, color: isLight ? '#2F2F2F' : '#B8B8B8', borderBottom: `1px solid ${divider}` }}>
                 COMMENTS <span style={{ color }}>{comments.length || ''}</span>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
@@ -551,9 +551,9 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
                       <div style={{ width: 24, height: 24, borderRadius: '50%', background: color + '33', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue'", fontSize: 12, color, flexShrink: 0 }}>
                         {(c.profiles?.username || 'U')[0].toUpperCase()}
                       </div>
-                      <span style={{ fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 600, color: isLight ? '#666' : '#aaa' }}>{c.profiles?.username || 'Anonymous'}</span>
+                      <span style={{ fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 600, color: isLight ? '#3F3F3F' : '#aaa' }}>{c.profiles?.username || 'Anonymous'}</span>
                     </div>
-                    <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: isLight ? '#555' : '#666', paddingLeft: 32, lineHeight: 1.5 }}>{c.text}</div>
+                    <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: isLight ? '#4A4A4A' : '#B8B8B8', paddingLeft: 32, lineHeight: 1.5 }}>{c.text}</div>
                   </div>
                 ))}
               </div>
