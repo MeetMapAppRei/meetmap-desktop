@@ -1243,7 +1243,7 @@ function AppInner() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* MAP — left side, takes remaining space */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, minWidth: 520, position: 'relative' }}>
           <MapView
             events={eventsForDisplay}
             selectedEvent={selectedEvent}
@@ -1255,7 +1255,7 @@ function AppInner() {
 
         {/* EVENT PANEL — right sidebar */}
         <div style={{
-          width: 380, background: isLight ? '#FFFFFF' : '#0D0D0D', borderLeft: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
+          width: 'clamp(420px, 34vw, 560px)', background: isLight ? '#FFFFFF' : '#0D0D0D', borderLeft: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
         }}>
           <EventPanel
