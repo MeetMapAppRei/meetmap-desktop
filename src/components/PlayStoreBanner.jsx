@@ -8,16 +8,6 @@ const DESKTOP_MQ = '(min-width: 768px)'
 
 const defaultPlayUrl = 'https://play.google.com/store/apps/details?id=com.meetmap.app'
 
-function isNativeAppShell() {
-  if (typeof window === 'undefined') return false
-  try {
-    const c = window.Capacitor
-    return Boolean(c && typeof c.isNativePlatform === 'function' && c.isNativePlatform())
-  } catch {
-    return false
-  }
-}
-
 function readSnoozeUntil() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
@@ -57,7 +47,6 @@ export default function PlayStoreBanner() {
   const placement = isDesktopLayout ? 'top' : 'bottom'
 
   useEffect(() => {
-    if (isNativeAppShell()) return
     // On desktop (findcarmeets.com), keep this banner reliably visible.
     // On mobile, respect a snooze so it doesn't keep covering UI.
     if (isDesktopLayout) {
