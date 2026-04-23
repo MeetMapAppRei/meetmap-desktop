@@ -8,6 +8,7 @@ import EventDetail from './components/EventDetail'
 import AuthModal from './components/AuthModal'
 import ImportQueueModal from './components/ImportQueueModal'
 import ModerationQueueModal from './components/ModerationQueueModal'
+import PlayStoreBanner from './components/PlayStoreBanner'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const parseCsvEnv = (value) =>
@@ -858,7 +859,16 @@ function AppInner() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: isLight ? '#F6F6F6' : '#0A0A0A', overflow: 'hidden' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: isLight ? '#F6F6F6' : '#0A0A0A',
+        overflow: 'hidden',
+        paddingTop: 'var(--meetmap-play-promo-top, 0px)',
+      }}
+    >
 
       {/* TOP NAV */}
       <nav style={{
@@ -1359,6 +1369,7 @@ function AppInner() {
           onSuccess={() => setShowAuth(false)}
         />
       )}
+      <PlayStoreBanner />
     </div>
   )
 }
