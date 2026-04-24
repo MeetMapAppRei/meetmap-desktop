@@ -140,7 +140,7 @@ export const fetchEvents = async (filters = {}) => {
   let query = supabase
     .from('events')
     // Explicitly include `address` so the UI can always display the full street address.
-    .select('id, user_id, title, type, date, time, location, city, address, lat, lng, description, tags, host, photo_url, featured, created_at, event_attendees(count)')
+    .select('*, profiles(username, avatar_url), event_attendees(count)')
     .order('date', { ascending: true })
   if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
   if (filters.search) query = query.or(`title.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
