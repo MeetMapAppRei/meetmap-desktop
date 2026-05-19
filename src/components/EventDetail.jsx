@@ -5,7 +5,7 @@ import { getEventQuality } from '../lib/eventQuality'
 import ReportEventModal from './ReportEventModal'
 import { formatEventTime } from '../lib/formatEventTime'
 import { buildEventLocationQuery, getDirectionsUrl } from '../lib/eventLocation'
-import { geocodeAddress } from '../lib/geocode'
+import { areEventCoordsPlausible, geocodeAddress } from '../lib/geocode'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -222,6 +222,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const [updateMessage, setUpdateMessage] = useState('')
   const [updateError, setUpdateError] = useState('')
   const [showReport, setShowReport] = useState(false)
+  const coordRepairRef = useRef(null)
 
   const { isLight } = useTheme()
 
@@ -235,6 +236,35 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const isOwner = user && event.user_id === user.id
   const today = new Date().toISOString().split('T')[0]
   const isPast = event.date < today
+
+  useEffect(() => {
+    if (editing || areEventCoordsPlausible(event)) return
+    if (coordRepairRef.current === event.id) return
+    const query = buildEventLocationQuery(event)
+    if (!query) return
+    coordRepairRef.current = event.id
+    let cancelled = false
+    geocodeAddress(query)
+      .then(async (fixed) => {
+        if (cancelled || !fixed) return
+        const next = { ...event, lat: fixed.lat, lng: fixed.lng }
+        setEvent(next)
+        if (isOwner) {
+          try {
+            const updated = await updateEvent(event.id, { lat: fixed.lat, lng: fixed.lng })
+            onUpdated?.(updated || next)
+          } catch {
+            onUpdated?.(next)
+          }
+        } else {
+          onUpdated?.(next)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [editing, event, isOwner, onUpdated])
 
   const overlayBg = isLight ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.85)'
   const panelBg = isLight ? '#FFFFFF' : '#0F0F0F'
