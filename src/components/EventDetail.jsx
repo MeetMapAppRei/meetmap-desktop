@@ -4,7 +4,8 @@ import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
 import ReportEventModal from './ReportEventModal'
 import { formatEventTime } from '../lib/formatEventTime'
-import { getDirectionsUrl } from '../lib/eventLocation'
+import { buildEventLocationQuery, getDirectionsUrl } from '../lib/eventLocation'
+import { geocodeAddress } from '../lib/geocode'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -23,13 +24,6 @@ const inp = {
 const lbl = {
   fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#555',
   letterSpacing: 1, display: 'block', marginBottom: 4, textTransform: 'uppercase',
-}
-
-async function geocodeAddress(address) {
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`)
-  const data = await res.json()
-  if (!data.length) return null
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
 }
 
 function EditModal({ event, user, onSaved, onCancel }) {
@@ -61,7 +55,13 @@ function EditModal({ event, user, onSaved, onCancel }) {
   const handleAddressBlur = async () => {
     if (!form.address.trim()) return
     setGeocoding(true); setAddressStatus(''); setCoords(null)
-    const result = await geocodeAddress(form.address).catch(() => null)
+    const result = await geocodeAddress(
+      buildEventLocationQuery({
+        address: form.address,
+        location: form.location,
+        city: form.city,
+      }),
+    ).catch(() => null)
     setCoords(result)
     setAddressStatus(result ? 'found' : 'notfound')
     setGeocoding(false)
@@ -81,7 +81,16 @@ function EditModal({ event, user, onSaved, onCancel }) {
     setError(''); setSaving(true)
     try {
       let finalCoords = coords
-      if (form.address && !finalCoords) finalCoords = await geocodeAddress(form.address).catch(() => null)
+      if (form.address.trim()) {
+        const geocoded = await geocodeAddress(
+          buildEventLocationQuery({
+            address: form.address,
+            location: form.location,
+            city: form.city,
+          }),
+        ).catch(() => null)
+        if (geocoded) finalCoords = geocoded
+      }
       const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
       const updates = {
         title: form.title, type: form.type, date: form.date, time: form.time,

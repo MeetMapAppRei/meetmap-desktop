@@ -1,32 +1,7 @@
 import { useState, useRef } from 'react'
 import { createEvent, uploadEventPhoto } from '../lib/supabase'
-
-async function geocodeAddress(address) {
-  if (!address || !String(address).trim()) return null
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(String(address).trim())}&format=json&limit=1`
-  let lastErr
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * attempt))
-      const res = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'MeetMap/1.0 (https://findcarmeets.com)',
-        },
-      })
-      if (!res.ok) {
-        lastErr = new Error(`Geocoding failed (${res.status})`)
-        continue
-      }
-      const data = await res.json()
-      if (!Array.isArray(data) || !data.length) return null
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
-    } catch (e) {
-      lastErr = e
-    }
-  }
-  throw lastErr
-}
+import { geocodeAddress } from '../lib/geocode'
+import { buildEventLocationQuery } from '../lib/eventLocation'
 
 async function extractFlyerInfo(imageBase64, mediaType = "image/jpeg") {
   const response = await fetch('/api/claude', {
@@ -166,9 +141,18 @@ export default function PostEventModal({ user, onClose, onPosted }) {
         tags: info.tags || prev.tags,
       }))
       setFlyerSuccess(true)
-      if (info.address) {
-        const result = await geocodeAddress(info.address).catch(() => null)
-        if (result) { setCoords(result); setAddressStatus('found') }
+      if (info.address || info.location || info.city) {
+        const result = await geocodeAddress(
+          buildEventLocationQuery({
+            address: info.address || '',
+            location: info.location || '',
+            city: info.city || '',
+          }),
+        ).catch(() => null)
+        if (result) {
+          setCoords(result)
+          setAddressStatus('found')
+        }
       }
     } catch (e) {
       setError(e?.message || 'Could not read flyer. Try a clearer image or fill in manually.')
@@ -180,20 +164,44 @@ export default function PostEventModal({ user, onClose, onPosted }) {
   const handleAddressBlur = async () => {
     if (!form.address.trim()) return
     setGeocoding(true); setAddressStatus(''); setCoords(null)
-    const result = await geocodeAddress(form.address).catch(() => null)
+    const result = await geocodeAddress(
+      buildEventLocationQuery({
+        address: form.address,
+        location: form.location,
+        city: form.city,
+      }),
+    ).catch(() => null)
     setCoords(result)
     setAddressStatus(result ? 'found' : 'notfound')
     setGeocoding(false)
   }
 
   const handleSubmit = async () => {
-    if (!form.title || !form.date || !form.location || !form.city) { setError('Please fill in all required fields.'); return }
+    const required = [
+      { key: 'title', label: 'Event Name' },
+      { key: 'date', label: 'Date' },
+      { key: 'city', label: 'City, State' },
+    ]
+    const missing = required.filter((f) => !String(form[f.key] || '').trim())
+    if (missing.length > 0) {
+      setError(`Please complete: ${missing.map((m) => m.label).join(', ')}.`)
+      return
+    }
     if (submitGuardRef.current) return
     submitGuardRef.current = true
     setError(''); setLoading(true)
     try {
       let finalCoords = coords
-      if (form.address && !finalCoords) finalCoords = await geocodeAddress(form.address).catch(() => null)
+      if (form.address.trim()) {
+        const geocoded = await geocodeAddress(
+          buildEventLocationQuery({
+            address: form.address,
+            location: form.location,
+            city: form.city,
+          }),
+        ).catch(() => null)
+        if (geocoded) finalCoords = geocoded
+      }
       const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
       const payload = { title: form.title, type: form.type, date: form.date, time: form.time, location: form.location, city: form.city, address: form.address, description: form.description, tags, host: form.host, lat: finalCoords?.lat || null, lng: finalCoords?.lng || null, user_id: user.id }
       const created = await createEvent(payload, user.id)
@@ -287,7 +295,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
                 {!geocoding && addressStatus === 'notfound' && <span style={{ color: '#FF9944' }}>⚠️ Not found — try adding city/state</span>}
               </div>
 
-              <label style={lbl}>Venue / Spot Name *</label>
+              <label style={lbl}>Venue / Spot Name (optional)</label>
               <input style={inp} placeholder="AutoZone Parking, Walmart Lot" value={form.location} onChange={e => set('location', e.target.value)} />
 
               <label style={lbl}>City, State *</label>

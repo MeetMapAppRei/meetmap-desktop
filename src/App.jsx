@@ -9,6 +9,9 @@ import AuthModal from './components/AuthModal'
 import ImportQueueModal from './components/ImportQueueModal'
 import ModerationQueueModal from './components/ModerationQueueModal'
 import PlayStoreBanner from './components/PlayStoreBanner'
+import FirstEventNudge from './components/FirstEventNudge'
+import { geocodeAddress } from './lib/geocode'
+import { buildEventLocationQuery } from './lib/eventLocation'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const parseCsvEnv = (value) =>
@@ -312,14 +315,6 @@ function AppInner() {
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
-  }
-
-  async function geocodeAddress(address) {
-    if (!address || !address.trim()) return null
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`)
-    const data = await res.json()
-    if (!data.length) return null
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
   }
 
   const baseEvents = showSavedOnly
@@ -775,7 +770,7 @@ function AppInner() {
       if (!ready) return
 
       let coords = null
-      const query = imp.address?.trim() ? imp.address : `${imp.location || ''}, ${imp.city || ''}`.trim()
+      const query = buildEventLocationQuery(imp)
       if (query) coords = await geocodeAddress(query).catch(() => null)
       if (query && !coords) {
         throw new Error('Could not find that street address on the map. Try editing the address (include street, city, state, zip).')
@@ -1268,6 +1263,9 @@ function AppInner() {
           width: 'clamp(420px, 34vw, 560px)', background: isLight ? '#FFFFFF' : '#0D0D0D', borderLeft: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
         }}>
+          <div style={{ padding: '12px 14px 0' }}>
+            <FirstEventNudge userId={user?.id} onPost={() => (user ? setShowPost(true) : setShowAuth(true))} />
+          </div>
           <EventPanel
             events={eventsForDisplay}
             loading={loading}
