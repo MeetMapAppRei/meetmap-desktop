@@ -4,6 +4,7 @@ import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
 import ReportEventModal from './ReportEventModal'
 import { formatEventTime } from '../lib/formatEventTime'
+import { getDirectionsUrl } from '../lib/eventLocation'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
@@ -11,10 +12,6 @@ const STATUS_META = {
   moved: { label: 'Moved', fg: '#00D4FF', bg: '#00D4FF22' },
   delayed: { label: 'Delayed', fg: '#FFD700', bg: '#FFD70022' },
   canceled: { label: 'Canceled', fg: '#FF6060', bg: '#FF353522' },
-}
-const getDirectionsUrl = (event) => {
-  const query = (event?.address || `${event?.location || ''}, ${event?.city || ''}`).trim()
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 }
 
 const inp = {
@@ -71,8 +68,14 @@ function EditModal({ event, user, onSaved, onCancel }) {
   }
 
   const handleSave = async () => {
-    if (!form.title || !form.date || !form.location || !form.city) {
-      setError('Please fill in all required fields.')
+    const required = [
+      { key: 'title', label: 'Event Name' },
+      { key: 'date', label: 'Date' },
+      { key: 'city', label: 'City, State' },
+    ]
+    const missing = required.filter((f) => !String(form[f.key] || '').trim())
+    if (missing.length > 0) {
+      setError(`Please complete: ${missing.map((m) => m.label).join(', ')}.`)
       return
     }
     setError(''); setSaving(true)
@@ -161,7 +164,7 @@ function EditModal({ event, user, onSaved, onCancel }) {
                 {!geocoding && addressStatus === 'notfound' && <span style={{ color: '#FF9944' }}>⚠️ Not found</span>}
               </div>
 
-              <label style={lbl}>Venue / Spot Name *</label>
+              <label style={lbl}>Venue / Spot Name (optional)</label>
               <input style={inp} value={form.location} onChange={e => set('location', e.target.value)} placeholder="AutoZone Parking" />
 
               <label style={lbl}>City, State *</label>

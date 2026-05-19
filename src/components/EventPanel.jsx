@@ -1,16 +1,13 @@
 import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
 import { formatEventTime } from '../lib/formatEventTime'
+import { getDirectionsUrl } from '../lib/eventLocation'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
 const STATUS_META = {
   moved: { label: 'Moved', fg: '#00D4FF', bg: '#00D4FF22' },
   delayed: { label: 'Delayed', fg: '#FFD700', bg: '#FFD70022' },
   canceled: { label: 'Canceled', fg: '#FF6060', bg: '#FF353522' },
-}
-const getDirectionsUrl = (event) => {
-  const query = (event?.address || `${event?.location || ''}, ${event?.city || ''}`).trim()
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 }
 
 export default function EventPanel({ events, loading, selectedEvent, onEventClick, onHover, savedEventIds = [], onToggleSaved }) {
