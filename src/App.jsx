@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents, fetchEventStatuses, fetchLatestEventUpdates, fetchEventReports, resolveEventReport } from './lib/supabase'
+import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents, fetchEventStatuses, fetchLatestEventUpdates, fetchEventReports, resolveEventReport, fetchNotificationPreferences, upsertNotificationPreferences } from './lib/supabase'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
 import PostEventModal from './components/PostEventModal'
 import EventDetail from './components/EventDetail'
 import AuthModal from './components/AuthModal'
+import NotificationSettingsModal from './components/NotificationSettingsModal'
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  normalizeNotificationPreferences,
+  isReminderWindowEnabled,
+} from './lib/notificationPreferences'
 import ImportQueueModal from './components/ImportQueueModal'
 import ModerationQueueModal from './components/ModerationQueueModal'
 import PlayStoreBanner from './components/PlayStoreBanner'
@@ -96,6 +102,11 @@ function AppInner() {
   const [notificationPermission, setNotificationPermission] = useState(
     typeof window !== 'undefined' && 'Notification' in window ? window.Notification.permission : 'unsupported'
   )
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false)
+  const [notificationPrefs, setNotificationPrefs] = useState(() => ({
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+  }))
+  const [notificationPrefsSaving, setNotificationPrefsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [mapCenter, setMapCenter] = useState(null)
 
@@ -134,6 +145,35 @@ function AppInner() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null))
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setNotificationPrefs({ ...DEFAULT_NOTIFICATION_PREFERENCES })
+      return
+    }
+    if (notificationPermission !== 'granted') return
+
+    let cancelled = false
+    fetchNotificationPreferences(user.id)
+      .then((row) => {
+        if (cancelled) return
+        if (row) {
+          setNotificationPrefs(normalizeNotificationPreferences(row))
+          return
+        }
+        return upsertNotificationPreferences(user.id, {}).then((created) => {
+          if (!cancelled && created) {
+            setNotificationPrefs(normalizeNotificationPreferences(created))
+          }
+        })
+      })
+      .catch((error) => {
+        console.error('Failed to load notification preferences:', error)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user, notificationPermission])
 
   // Reload events whenever showPast or typeFilter changes
   useEffect(() => {
@@ -302,10 +342,43 @@ function AppInner() {
     try {
       const permission = await window.Notification.requestPermission()
       setNotificationPermission(permission)
+      if (permission === 'granted') {
+        if (user?.id) await upsertNotificationPreferences(user.id, {})
+        setShowNotificationSettings(true)
+      }
     } catch (e) {
       console.error('Notification permission request failed:', e)
     }
   }
+
+  const handleNotificationPrefChange = async (patch) => {
+    const next = { ...notificationPrefs, ...patch }
+    setNotificationPrefs(next)
+    if (!user?.id) return
+    setNotificationPrefsSaving(true)
+    try {
+      const saved = await upsertNotificationPreferences(user.id, next)
+      if (saved) setNotificationPrefs(normalizeNotificationPreferences(saved))
+    } catch (error) {
+      console.error('Failed to save notification preferences:', error)
+      try {
+        const row = await fetchNotificationPreferences(user.id)
+        if (row) setNotificationPrefs(normalizeNotificationPreferences(row))
+      } catch {}
+    } finally {
+      setNotificationPrefsSaving(false)
+    }
+  }
+
+  const handleAlertsClick = async () => {
+    if (notificationPermission !== 'granted') {
+      await handleEnableNotifications()
+      return
+    }
+    setShowNotificationSettings(true)
+  }
+
+  const alertsEnabled = notificationPermission === 'granted'
 
   const toRad = (deg) => (deg * Math.PI) / 180
   const distanceMiles = (lat1, lon1, lat2, lon2) => {
@@ -347,6 +420,7 @@ function AppInner() {
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return
     if (notificationPermission !== 'granted') return
+    if (!notificationPrefs.reminders_enabled) return
     if (!savedEventIds.length || !events.length) return
 
     const reminderLogKey = getReminderLogStorageKey(user)
@@ -368,6 +442,7 @@ function AppInner() {
       const eventLog = reminderLog[event.id] || {}
 
       for (const w of REMINDER_WINDOWS) {
+        if (!isReminderWindowEnabled(notificationPrefs, w.id)) continue
         if (eventLog[w.id]) continue
         const reminderMs = startMs - w.leadMs
         if (now >= reminderMs && now <= reminderMs + w.windowMs) {
@@ -393,11 +468,12 @@ function AppInner() {
         window.localStorage.setItem(reminderLogKey, JSON.stringify(reminderLog))
       } catch {}
     }
-  }, [notificationPermission, savedEventIds, events, user])
+  }, [notificationPermission, notificationPrefs, savedEventIds, events, user])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return
     if (notificationPermission !== 'granted') return
+    if (!notificationPrefs.event_updates_enabled) return
     if (!savedEventIds.length) return
 
     const snapshotKey = getUpdateSnapshotStorageKey(user)
@@ -449,11 +525,12 @@ function AppInner() {
     checkUpdateChanges()
     const interval = window.setInterval(checkUpdateChanges, 90 * 1000)
     return () => window.clearInterval(interval)
-  }, [notificationPermission, savedEventIds, events, user])
+  }, [notificationPermission, notificationPrefs, savedEventIds, events, user])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return
     if (notificationPermission !== 'granted') return
+    if (!notificationPrefs.event_updates_enabled) return
     if (!savedEventIds.length) return
 
     const snapshotKey = getStatusSnapshotStorageKey(user)
@@ -513,7 +590,7 @@ function AppInner() {
     checkStatusChanges()
     const interval = window.setInterval(checkStatusChanges, 90 * 1000)
     return () => window.clearInterval(interval)
-  }, [notificationPermission, savedEventIds, events, user])
+  }, [notificationPermission, notificationPrefs, savedEventIds, events, user])
 
   const requestNearMe = () => {
     setNearMeError('')
@@ -935,7 +1012,7 @@ function AppInner() {
         </button>
 
         <button
-          onClick={handleEnableNotifications}
+          onClick={handleAlertsClick}
           style={{
             background: topBtnBg,
             border: `1px solid ${topBtnBorder}`,
@@ -952,9 +1029,9 @@ function AppInner() {
             alignItems: 'center',
             justifyContent: 'center',
           }}
-          title="Enable reminders for saved events"
+          title={alertsEnabled ? 'Customize alert settings' : 'Enable reminders for saved events'}
         >
-          {notificationPermission === 'granted' ? 'Alerts On' : 'Enable Alerts'}
+          {alertsEnabled ? 'Alerts On' : 'Enable Alerts'}
         </button>
 
         {/* Imports (flyer queue) */}
@@ -1365,6 +1442,21 @@ function AppInner() {
         <AuthModal
           onClose={() => setShowAuth(false)}
           onSuccess={() => setShowAuth(false)}
+        />
+      )}
+      {showNotificationSettings && (
+        <NotificationSettingsModal
+          onClose={() => setShowNotificationSettings(false)}
+          alertsEnabled={alertsEnabled}
+          prefs={notificationPrefs}
+          saving={notificationPrefsSaving}
+          canSyncPrefs={Boolean(user?.id)}
+          onPrefChange={handleNotificationPrefChange}
+          onRequestEnable={handleEnableNotifications}
+          onRequestLogin={() => {
+            setShowNotificationSettings(false)
+            setShowAuth(true)
+          }}
         />
       )}
       <PlayStoreBanner />
