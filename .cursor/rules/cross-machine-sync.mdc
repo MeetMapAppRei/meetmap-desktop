@@ -1,0 +1,24 @@
+---
+description: Pull/push with meetmap when switching Mac ↔ Windows (desktop repo)
+alwaysApply: true
+---
+
+# Cross-machine sync (meetmap-desktop)
+
+This repo is synced **together with meetmap** via GitHub. Run all sync commands from **meetmap** root, or use the npm scripts here (they delegate to meetmap).
+
+## Agent behavior
+
+Same as meetmap `.cursor/rules/cross-machine-sync.mdc`:
+
+- **Session start:** `npm run sync:pull` (from this folder or meetmap)
+- **Switching machines / done:** ensure commits exist, then `npm run sync:push`
+
+## Paths
+
+| Machine | meetmap-desktop (this repo) |
+|---------|------------------------------|
+| Windows | `C:\Users\areil\Documents\meetmap-desktop\meetmap-desktop` |
+| Mac | `~/Documents/meetmap-desktop/meetmap-desktop` |
+
+Full docs: `meetmap/docs/CROSS_MACHINE_SYNC.md`
