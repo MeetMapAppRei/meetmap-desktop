@@ -16,6 +16,7 @@ import ImportQueueModal from './components/ImportQueueModal'
 import ModerationQueueModal from './components/ModerationQueueModal'
 import PlayStoreBanner from './components/PlayStoreBanner'
 import FirstEventNudge from './components/FirstEventNudge'
+import HeaderOptionsMenu from './components/HeaderOptionsMenu'
 import { geocodeAddress } from './lib/geocode'
 import { buildEventLocationQuery } from './lib/eventLocation'
 
@@ -32,21 +33,6 @@ const REMINDER_WINDOWS = [
   { id: '24h', leadMs: 24 * 60 * 60 * 1000, windowMs: 60 * 60 * 1000 },
   { id: '2h', leadMs: 2 * 60 * 60 * 1000, windowMs: 20 * 60 * 1000 },
 ]
-const CITY_LINKS = [
-  { slug: 'dallas', label: 'Dallas' },
-  { slug: 'houston', label: 'Houston' },
-  { slug: 'los-angeles', label: 'Los Angeles' },
-  { slug: 'miami', label: 'Miami' },
-  { slug: 'atlanta', label: 'Atlanta' },
-  { slug: 'phoenix', label: 'Phoenix' },
-  { slug: 'new-york', label: 'New York' },
-  { slug: 'chicago', label: 'Chicago' },
-  { slug: 'san-diego', label: 'San Diego' },
-  { slug: 'austin', label: 'Austin' },
-  { slug: 'charlotte', label: 'Charlotte' },
-  { slug: 'orlando', label: 'Orlando' },
-]
-
 const isImportAdminUser = (user) => {
   if (!user) return false
   const email = String(user.email || '').toLowerCase()
@@ -942,12 +928,13 @@ function AppInner() {
       }}
     >
 
-      {/* TOP NAV */}
+      {/* TOP NAV — left brand, scrollable filters, pinned auth/post */}
       <nav style={{
         height: 58, background: isLight ? '#FFFFFF' : '#0D0D0D', borderBottom: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
-        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16,
-        flexShrink: 0, zIndex: 100,
+        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12,
+        flexShrink: 0, position: 'relative', zIndex: 1000, minWidth: 0,
       }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 8 }}>
           <span style={{ fontSize: 22 }}>🚗</span>
@@ -986,120 +973,31 @@ function AppInner() {
             }}
           />
         </div>
+        </div>
 
-        {/* Light/Dark toggle */}
-        <button
-          onClick={toggleTheme}
+        <div
           style={{
-            background: topBtnBg,
-            border: `1px solid ${topBtnBorder}`,
-            color: topBtnColor,
-            borderRadius: navBtnBorderRadius,
-            padding: `0 ${navBtnPaddingX}px`,
-            height: navBtnHeight,
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12,
-            fontWeight: 800,
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: 0.3,
-            display: 'inline-flex',
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 6,
+            flexWrap: 'nowrap',
           }}
         >
-          Light/Dark
-        </button>
-
-        <button
-          onClick={handleAlertsClick}
-          style={{
-            background: topBtnBg,
-            border: `1px solid ${topBtnBorder}`,
-            color: topBtnColor,
-            borderRadius: navBtnBorderRadius,
-            padding: `0 ${navBtnPaddingX}px`,
-            height: navBtnHeight,
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12,
-            fontWeight: 800,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title={alertsEnabled ? 'Customize alert settings' : 'Enable reminders for saved events'}
-        >
-          {alertsEnabled ? 'Alerts On' : 'Enable Alerts'}
-        </button>
-
-        {/* Imports (flyer queue) */}
-        {canAccessImports && (
-          <button
-            onClick={() => setShowImportQueue(true)}
-            style={{
-              background: topBtnBg,
-              border: `1px solid ${topBtnBorder}`,
-              borderRadius: navBtnBorderRadius,
-              padding: `0 ${navBtnPaddingX}px`,
-              height: navBtnHeight,
-              color: topBtnColor,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12,
-              fontWeight: 800,
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: 0.3,
-              whiteSpace: 'nowrap',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            Imports
-          </button>
-        )}
-
-        {/* Moderation (event reports) */}
-        {canAccessImports && (
-          <button
-            onClick={() => setShowModerationQueue(true)}
-            style={{
-              background: topBtnBg,
-              border: `1px solid ${topBtnBorder}`,
-              borderRadius: navBtnBorderRadius,
-              padding: `0 ${navBtnPaddingX}px`,
-              height: navBtnHeight,
-              color: topBtnColor,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12,
-              fontWeight: 800,
-              cursor: 'pointer',
-              textTransform: 'uppercase',
-              letterSpacing: 0.3,
-              whiteSpace: 'nowrap',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            Moderation
-          </button>
-        )}
-
         {/* Type filters */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           {/* All Events */}
           <button
             onClick={() => setTypeFilter('all')}
             style={{
-              padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+              padding: '5px 10px', borderRadius: 20, border: 'none', cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
               textTransform: 'capitalize', letterSpacing: 0.3,
               background: typeFilter === 'all' ? (TYPE_COLORS.all || '#FF6B35') : filterChipBg,
               color: typeFilter === 'all' ? '#0A0A0A' : filterChipText,
               transition: 'all 0.15s',
+              flexShrink: 0,
             }}
           >
             All Events
@@ -1112,7 +1010,7 @@ function AppInner() {
               else requestNearMe()
             }}
             style={{
-              padding: '5px 14px', borderRadius: 20, border: '1px solid',
+              padding: '5px 10px', borderRadius: 20, border: '1px solid',
               borderColor: nearMeOnly ? '#FF6B35' : filterChipBorder,
               background: nearMeOnly ? (isLight ? '#FFF3ED' : '#222') : filterChipBg,
               cursor: 'pointer',
@@ -1121,6 +1019,7 @@ function AppInner() {
               textTransform: 'uppercase',
               letterSpacing: 0.3,
               transition: 'all 0.15s',
+              flexShrink: 0,
             }}
           >
             {nearMeOnly ? '✓ Near Me' : 'Near Me'}
@@ -1131,12 +1030,13 @@ function AppInner() {
               key={t}
               onClick={() => setTypeFilter(t)}
               style={{
-                padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                padding: '5px 10px', borderRadius: 20, border: 'none', cursor: 'pointer',
                 fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
                 textTransform: 'capitalize', letterSpacing: 0.3,
                 background: typeFilter === t ? (TYPE_COLORS[t] || '#FF6B35') : filterChipBg,
                 color: typeFilter === t ? '#0A0A0A' : filterChipText,
                 transition: 'all 0.15s',
+                flexShrink: 0,
               }}
             >
               {t}
@@ -1168,67 +1068,35 @@ function AppInner() {
           </button>
         )}
 
-        {/* Past events toggle */}
-        <button
-          onClick={() => setShowPast(p => !p)}
-          style={{
-            padding: '5px 14px', borderRadius: 20, border: '1px solid',
-            borderColor: showPast ? '#444' : '#1A1A1A',
-            background: showPast ? '#222' : 'transparent',
-            color: showPast ? '#aaa' : '#444',
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-        >
-          {showPast ? '✓ Past Events' : 'Past Events'}
-        </button>
+        </div>
 
-        <button
-          onClick={() => setShowSavedOnly(p => !p)}
-          style={{
-            padding: '5px 14px', borderRadius: 20, border: '1px solid',
-            borderColor: showSavedOnly ? '#FF6B35' : '#1A1A1A',
-            background: showSavedOnly ? '#20140F' : 'transparent',
-            color: showSavedOnly ? '#FF8A5C' : '#444',
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-        >
-          {showSavedOnly ? `★ Saved (${savedEventIds.length})` : 'Saved'}
-        </button>
-        <button
-          onClick={() => setShowCanceled(p => !p)}
-          style={{
-            padding: '5px 14px', borderRadius: 20, border: '1px solid',
-            borderColor: showCanceled ? '#FF6060' : '#1A1A1A',
-            background: showCanceled ? '#2A1010' : 'transparent',
-            color: showCanceled ? '#FF7A7A' : '#444',
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-        >
-          {showCanceled ? '✓ Show Canceled' : 'Show Canceled'}
-        </button>
-        <button
-          onClick={() => setShowGoingOnly(p => !p)}
-          style={{
-            padding: '5px 14px', borderRadius: 20, border: '1px solid',
-            borderColor: showGoingOnly ? '#7CFF6B' : '#1A1A1A',
-            background: showGoingOnly ? '#0F2412' : 'transparent',
-            color: showGoingOnly ? '#9BFF8E' : '#444',
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-        >
-          {showGoingOnly ? '✓ Going Only' : 'Going Only'}
-        </button>
-
-        {/* spacer */}
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
-        {/* Auth + Post */}
+        {/* Options + auth/post — always visible on the right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 4 }}>
+        <HeaderOptionsMenu
+          isLight={isLight}
+          onToggleTheme={toggleTheme}
+          alertsEnabled={alertsEnabled}
+          onAlertsClick={handleAlertsClick}
+          showPast={showPast}
+          onTogglePast={() => setShowPast((p) => !p)}
+          showSavedOnly={showSavedOnly}
+          onToggleSavedOnly={() => setShowSavedOnly((p) => !p)}
+          savedCount={savedEventIds.length}
+          showCanceled={showCanceled}
+          onToggleCanceled={() => setShowCanceled((p) => !p)}
+          showGoingOnly={showGoingOnly}
+          onToggleGoingOnly={() => setShowGoingOnly((p) => !p)}
+          canAccessImports={canAccessImports}
+          pendingImportsCount={imports.length}
+          onOpenImports={() => setShowImportQueue(true)}
+          onOpenModeration={() => setShowModerationQueue(true)}
+          topBtnBg={topBtnBg}
+          topBtnBorder={topBtnBorder}
+          topBtnColor={topBtnColor}
+          navBtnHeight={navBtnHeight}
+          navBtnPaddingX={navBtnPaddingX}
+          navBtnBorderRadius={navBtnBorderRadius}
+        />
         {user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#555' }}>
@@ -1271,7 +1139,20 @@ function AppInner() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setShowAuth(true)}
+              style={{
+                background: '#FF6B35', color: '#0A0A0A', border: 'none', borderRadius: 10,
+                padding: `0 ${navBtnPaddingX}px`, height: navBtnHeight, fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 16, letterSpacing: 1.5, cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}
+            >+ POST EVENT</button>
             <button
               onClick={() => setShowAuth(true)}
               style={{
@@ -1298,16 +1179,16 @@ function AppInner() {
             <button
               onClick={() => setShowAuth(true)}
               style={{
-                background: '#FF6B35',
-                border: 'none',
+                background: topBtnBg,
+                border: `1px solid ${topBtnBorder}`,
                 borderRadius: navBtnBorderRadius,
                 padding: `0 ${navBtnPaddingX}px`,
                 height: navBtnHeight,
-                color: '#0A0A0A',
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 16,
-                letterSpacing: 1.5,
+                color: topBtnColor,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
                 cursor: 'pointer',
+                fontWeight: 800,
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1315,10 +1196,11 @@ function AppInner() {
                 whiteSpace: 'nowrap',
               }}
             >
-              JOIN FREE
+              Join Free
             </button>
           </div>
         )}
+        </div>
       </nav>
 
       {/* MAIN CONTENT — map left, list right */}
@@ -1352,43 +1234,6 @@ function AppInner() {
             savedEventIds={savedEventIds}
             onToggleSaved={handleToggleSaved}
           />
-          <div style={{
-            borderTop: `1px solid ${isLight ? '#E5E5E5' : '#1A1A1A'}`,
-            padding: '10px 14px 12px',
-            background: isLight ? '#FAFAFA' : '#101010',
-          }}>
-            <div style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 10,
-              letterSpacing: 1.3,
-              textTransform: 'uppercase',
-              color: isLight ? '#555' : '#8A8A8A',
-              marginBottom: 8,
-              fontWeight: 700,
-            }}>
-              Popular Cities
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {CITY_LINKS.map(city => (
-                <a
-                  key={city.slug}
-                  href={`/?city=${encodeURIComponent(city.label)}`}
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 11,
-                    color: isLight ? '#D1491A' : '#FF8A5C',
-                    textDecoration: 'none',
-                    border: `1px solid ${isLight ? '#F0C3B3' : '#3A241C'}`,
-                    borderRadius: 999,
-                    padding: '3px 9px',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Car Meets in {city.label}
-                </a>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
