@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase, fetchComments, postComment, getEventRsvpStatus, setEventRsvp, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
+import { supabase, fetchComments, postComment, updateEvent, uploadEventPhoto, createEventUpdate } from '../lib/supabase'
 import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
 import ReportEventModal from './ReportEventModal'
@@ -210,9 +210,6 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const [event, setEvent] = useState(initialEvent)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
-  const [rsvpStatus, setRsvpStatus] = useState(null)
-  const [interestedCount, setInterestedCount] = useState(event.interested_count || 0)
-  const [goingCount, setGoingCount] = useState(event.going_count || event.event_attendees?.[0]?.count || 0)
   const [posting, setPosting] = useState(false)
   const [postingUpdate, setPostingUpdate] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -234,9 +231,6 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
   const quality = getEventQuality(event)
   const directionsUrl = getDirectionsUrl(event)
   const isOwner = user && event.user_id === user.id
-  const today = new Date().toISOString().split('T')[0]
-  const isPast = event.date < today
-
   useEffect(() => {
     if (editing || areEventCoordsPlausible(event)) return
     if (coordRepairRef.current === event.id) return
@@ -285,20 +279,7 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
   useEffect(() => {
     fetchComments(event.id).then(setComments).catch(console.error)
-    if (user) getEventRsvpStatus(event.id, user.id).then(setRsvpStatus)
-  }, [event.id, user])
-
-  const handleSetRsvp = async (nextStatus) => {
-    if (!user) return onAuthNeeded()
-    const current = rsvpStatus
-    const desired = current === nextStatus ? null : nextStatus
-    await setEventRsvp(event.id, user.id, desired)
-    setRsvpStatus(desired)
-    if (current === 'going') setGoingCount(p => Math.max(0, p - 1))
-    if (current === 'interested') setInterestedCount(p => Math.max(0, p - 1))
-    if (desired === 'going') setGoingCount(p => p + 1)
-    if (desired === 'interested') setInterestedCount(p => p + 1)
-  }
+  }, [event.id])
 
   const handleComment = async () => {
     if (!user) return onAuthNeeded()
@@ -482,16 +463,6 @@ export default function EventDetail({ event: initialEvent, user, saved = false, 
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                {!isPast && (
-                  <>
-                    <button onClick={() => handleSetRsvp('going')} style={{ flex: 1.4, background: rsvpStatus === 'going' ? 'transparent' : color, color: rsvpStatus === 'going' ? color : '#0A0A0A', border: `1px solid ${color}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 16, letterSpacing: 1.2, cursor: 'pointer' }}>
-                      {rsvpStatus === 'going' ? `✓ GOING · ${goingCount}` : `GOING · ${goingCount}`}
-                    </button>
-                    <button onClick={() => handleSetRsvp('interested')} style={{ flex: 1.2, background: rsvpStatus === 'interested' ? '#24180A' : shareBg, color: rsvpStatus === 'interested' ? '#FFD700' : shareText, border: `1px solid ${rsvpStatus === 'interested' ? '#FFD700' : shareBorder}`, borderRadius: 8, padding: 12, fontFamily: "'Bebas Neue'", fontSize: 15, letterSpacing: 1, cursor: 'pointer' }}>
-                      {rsvpStatus === 'interested' ? `★ INTERESTED · ${interestedCount}` : `INTERESTED · ${interestedCount}`}
-                    </button>
-                  </>
-                )}
                 <button
                   onClick={onToggleSaved}
                   style={{

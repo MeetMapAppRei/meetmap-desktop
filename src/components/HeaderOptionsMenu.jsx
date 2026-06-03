@@ -42,8 +42,6 @@ export default function HeaderOptionsMenu({
   savedCount,
   showCanceled,
   onToggleCanceled,
-  showGoingOnly,
-  onToggleGoingOnly,
   canAccessImports,
   pendingImportsCount = 0,
   onOpenImports,
@@ -60,7 +58,7 @@ export default function HeaderOptionsMenu({
   const rootRef = useRef(null)
   const triggerRef = useRef(null)
 
-  const hasActiveFilters = showPast || showSavedOnly || showCanceled || showGoingOnly
+  const hasActiveFilters = showPast || showSavedOnly || showCanceled
 
   const updateMenuPosition = () => {
     const el = triggerRef.current
@@ -209,13 +207,6 @@ export default function HeaderOptionsMenu({
         label="Show canceled"
         active={showCanceled}
         onClick={onToggleCanceled}
-        isLight={isLight}
-        panelBorder={panelBorder}
-      />
-      <MenuToggle
-        label="Going only"
-        active={showGoingOnly}
-        onClick={onToggleGoingOnly}
         isLight={isLight}
         panelBorder={panelBorder}
       />

@@ -81,7 +81,6 @@ function AppInner() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [showPast, setShowPast] = useState(false)
   const [showCanceled, setShowCanceled] = useState(false)
-  const [showGoingOnly, setShowGoingOnly] = useState(false)
   const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [savedEventIds, setSavedEventIds] = useState([])
   const [savedSyncAvailable, setSavedSyncAvailable] = useState(true)
@@ -384,12 +383,8 @@ function AppInner() {
     ? baseEvents
     : baseEvents.filter(e => String(e.status || 'active').toLowerCase() !== 'canceled')
 
-  const goingFilteredEvents = showGoingOnly
-    ? statusFilteredEvents.filter(e => Number(e.going_count || 0) > 0)
-    : statusFilteredEvents
-
   const eventsForDisplay = nearMeOnly && nearMeCoords
-    ? goingFilteredEvents
+    ? statusFilteredEvents
       .filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lng) && distanceMiles(nearMeCoords.lat, nearMeCoords.lng, e.lat, e.lng) <= RADIUS_MILES)
       .sort((a, b) => {
         const aStart = eventStartMs(a) ?? Number.POSITIVE_INFINITY
@@ -399,7 +394,7 @@ function AppInner() {
         return distanceMiles(nearMeCoords.lat, nearMeCoords.lng, a.lat, a.lng) -
           distanceMiles(nearMeCoords.lat, nearMeCoords.lng, b.lat, b.lng)
       })
-    : goingFilteredEvents
+    : statusFilteredEvents
 
   const upcomingCount = eventsForDisplay.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
 
@@ -1084,8 +1079,6 @@ function AppInner() {
           savedCount={savedEventIds.length}
           showCanceled={showCanceled}
           onToggleCanceled={() => setShowCanceled((p) => !p)}
-          showGoingOnly={showGoingOnly}
-          onToggleGoingOnly={() => setShowGoingOnly((p) => !p)}
           canAccessImports={canAccessImports}
           pendingImportsCount={imports.length}
           onOpenImports={() => setShowImportQueue(true)}
