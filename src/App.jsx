@@ -77,6 +77,17 @@ function AppInner() {
   const [hoveredEvent, setHoveredEvent] = useState(null)
   const [showPost, setShowPost] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
+  const [authInitialMode, setAuthInitialMode] = useState('login')
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
+  const openAuth = useCallback((mode = 'login') => {
+    setAuthInitialMode(mode)
+    setShowAuth(true)
+  }, [])
+  const closeAuth = useCallback(() => {
+    setShowAuth(false)
+    setAuthInitialMode('login')
+    setPasswordRecovery(false)
+  }, [])
   const [search, setSearch] = useState('')
   const [activeCityFilter, setActiveCityFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -136,9 +147,25 @@ function AppInner() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null))
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null)
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true)
+        if (typeof window !== 'undefined') {
+          const { pathname, search } = window.location
+          window.history.replaceState({}, document.title, `${pathname}${search}`)
+        }
+      }
+    })
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!passwordRecovery) return
+    openAuth('new-password')
+  }, [passwordRecovery, openAuth])
 
   useEffect(() => {
     if (!user?.id) {
@@ -1336,8 +1363,9 @@ function AppInner() {
       )}
       {showAuth && (
         <AuthModal
-          onClose={() => setShowAuth(false)}
-          onSuccess={() => setShowAuth(false)}
+          initialMode={authInitialMode}
+          onClose={closeAuth}
+          onSuccess={closeAuth}
         />
       )}
       {showNotificationSettings && (

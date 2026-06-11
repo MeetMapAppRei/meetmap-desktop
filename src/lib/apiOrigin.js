@@ -10,6 +10,14 @@ export function getAppOrigin() {
   return String(raw).replace(/\/$/, '')
 }
 
+/** Where Supabase auth emails (password reset, etc.) should redirect after the user clicks the link. */
+export function getAuthRedirectUrl() {
+  if (typeof window !== 'undefined' && /^https?:\/\//i.test(window.location?.origin || '')) {
+    return window.location.origin
+  }
+  return getAppOrigin() || 'https://findcarmeets.com'
+}
+
 /** @param {string} path e.g. `/api/storage-presign` */
 export function apiUrl(path) {
   const p = path.startsWith('/') ? path : `/${path}`
