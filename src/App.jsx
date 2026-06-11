@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
-import { supabase, fetchEvents, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents, fetchEventStatuses, fetchLatestEventUpdates, fetchEventReports, resolveEventReport, fetchNotificationPreferences, upsertNotificationPreferences } from './lib/supabase'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { supabase, fetchEvents, fetchEventById, fetchEventScheduleByIds, signIn, signUp, signOut, createEvent, fetchFlyerImports, createFlyerImport, updateFlyerImportStatus, updateFlyerImport, uploadFlyerImportImage, fetchSavedEventIds, setSavedEventStatus, upsertSavedEvents, fetchEventStatuses, fetchLatestEventUpdates, fetchEventReports, resolveEventReport, fetchNotificationPreferences, upsertNotificationPreferences } from './lib/supabase'
+import { isEventUpcoming } from './lib/eventSchedule'
 import { ThemeProvider, useTheme } from './lib/ThemeContext'
 import MapView from './components/MapView'
 import EventPanel from './components/EventPanel'
@@ -112,7 +113,15 @@ function AppInner() {
   const [importParams, setImportParams] = useState(null) // { sourceUrl, imageUrl }
   const [importError, setImportError] = useState(null)
   const [importUploading, setImportUploading] = useState(false)
-  const [sharedEventId, setSharedEventId] = useState(null)
+  const pendingSharedEventIdRef = useRef(
+    (() => {
+      try {
+        return String(new URLSearchParams(window.location.search).get('event') || '').trim()
+      } catch {
+        return ''
+      }
+    })(),
+  )
   const canAccessImports = isImportAdminUser(user)
 
   const topBtnBorder = isLight ? '#E5E5E5' : '#1E1E1E'
@@ -178,29 +187,54 @@ function AppInner() {
     setFiltered(result)
   }, [events, search, typeFilter])
 
+  const openEventById = useCallback(
+    async (rawEventId) => {
+      const eventId = String(rawEventId || '').trim()
+      if (!eventId) return
+      const inList = events.find(e => e.id === eventId)
+      const open = (event) => {
+        setSelectedEvent(event)
+        if (event.lat && event.lng) setMapCenter({ lat: event.lat, lng: event.lng })
+      }
+      if (inList) {
+        open(inList)
+        return
+      }
+      try {
+        const event = await fetchEventById(eventId)
+        if (!event) return
+        setEvents(prev => (prev.some(e => e.id === event.id) ? prev : [event, ...prev]))
+        open(event)
+      } catch (e) {
+        console.error('Failed to open event:', e)
+      }
+    },
+    [events],
+  )
+
   // Allow homepage city links to open the app with a prefilled city search.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const cityParam = (params.get('city') || '').trim()
-    const eventParam = (params.get('event') || '').trim()
-    if (eventParam) setSharedEventId(eventParam)
     if (!cityParam) return
     setSearch(cityParam)
     setActiveCityFilter(cityParam)
-    // Remove only city query and keep event deep-link if present.
     const next = new URL(window.location.href)
     next.searchParams.delete('city')
     window.history.replaceState({}, '', `${next.pathname}${next.search}`)
   }, [])
 
   useEffect(() => {
-    if (!sharedEventId || !Array.isArray(events) || events.length === 0) return
-    const match = events.find(e => e.id === sharedEventId)
-    if (!match) return
-    setSelectedEvent(match)
-    if (match.lat && match.lng) setMapCenter({ lat: match.lat, lng: match.lng })
-    setSharedEventId(null)
-  }, [sharedEventId, events])
+    const eventId = pendingSharedEventIdRef.current
+    if (!eventId) return
+    pendingSharedEventIdRef.current = ''
+    void openEventById(eventId)
+    try {
+      const next = new URL(window.location.href)
+      next.searchParams.delete('event')
+      window.history.replaceState({}, '', `${next.pathname}${next.search}`)
+    } catch {}
+  }, [openEventById])
 
   useEffect(() => {
     let active = true
@@ -462,7 +496,10 @@ function AppInner() {
 
     const checkUpdateChanges = async () => {
       try {
-        const updateMap = await fetchLatestEventUpdates(savedEventIds)
+        const [updateMap, scheduleMap] = await Promise.all([
+          fetchLatestEventUpdates(savedEventIds),
+          fetchEventScheduleByIds(savedEventIds),
+        ])
         let snapshot = {}
         let notified = {}
         try {
@@ -483,9 +520,18 @@ function AppInner() {
             ? `${row.latest_update_id || ''}|${row.latest_update_message || ''}|${row.latest_update_created_at || ''}`
             : ''
           const previous = snapshot[eventId] || ''
+          const schedule = scheduleMap[eventId]
+          const upcoming = schedule && isEventUpcoming(schedule)
 
-          if (hasBaseline && signature && previous !== signature && nextNotified[eventId] !== signature) {
-            const eventTitle = events.find(e => e.id === eventId)?.title || 'Saved event'
+          if (
+            upcoming &&
+            hasBaseline &&
+            signature &&
+            previous !== signature &&
+            nextNotified[eventId] !== signature
+          ) {
+            const eventTitle =
+              events.find(e => e.id === eventId)?.title || schedule?.title || 'Saved event'
             new window.Notification(`New host update: ${eventTitle}`, {
               body: row.latest_update_message || 'The host posted a new update.',
               icon: '/og-image.svg',
@@ -519,7 +565,10 @@ function AppInner() {
 
     const checkStatusChanges = async () => {
       try {
-        const statusMap = await fetchEventStatuses(savedEventIds)
+        const [statusMap, scheduleMap] = await Promise.all([
+          fetchEventStatuses(savedEventIds),
+          fetchEventScheduleByIds(savedEventIds),
+        ])
         let snapshot = {}
         let notified = {}
         try {
@@ -541,9 +590,18 @@ function AppInner() {
           const updatedAt = row.updated_at || ''
           const signature = `${status}|${note}|${updatedAt}`
           const previous = snapshot[eventId]
+          const schedule = scheduleMap[eventId]
+          const upcoming = schedule && isEventUpcoming(schedule)
 
-          if (hasBaseline && previous && previous.signature !== signature && nextNotified[eventId] !== signature) {
-            const eventTitle = events.find(e => e.id === eventId)?.title || 'Saved event'
+          if (
+            upcoming &&
+            hasBaseline &&
+            previous &&
+            previous.signature !== signature &&
+            nextNotified[eventId] !== signature
+          ) {
+            const eventTitle =
+              events.find(e => e.id === eventId)?.title || schedule?.title || 'Saved event'
             const label = status === 'canceled'
               ? 'Canceled'
               : status === 'moved'
