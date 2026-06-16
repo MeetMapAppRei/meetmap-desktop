@@ -54,6 +54,28 @@ const eventStartMs = (event) => {
   return Number.isFinite(ms) ? ms : null
 }
 
+const showEventNotification = (title, options, eventId, onOpenEvent) => {
+  try {
+    const notification = new window.Notification(title, {
+      icon: '/og-image.svg',
+      ...options,
+    })
+    if (eventId && typeof onOpenEvent === 'function') {
+      notification.onclick = () => {
+        try {
+          window.focus()
+        } catch {}
+        onOpenEvent(String(eventId).trim())
+        notification.close()
+      }
+    }
+    return notification
+  } catch (e) {
+    console.error('Failed to show notification:', e)
+    return null
+  }
+}
+
 function AppInner() {
   // Redirect human mobile users to the mobile app. Keep search crawlers on
   // the desktop URL so findcarmeets.com remains indexable.
@@ -133,6 +155,7 @@ function AppInner() {
       }
     })(),
   )
+  const [queuedEventId, setQueuedEventId] = useState(() => pendingSharedEventIdRef.current)
   const canAccessImports = isImportAdminUser(user)
 
   const topBtnBorder = isLight ? '#E5E5E5' : '#1E1E1E'
@@ -251,9 +274,11 @@ function AppInner() {
     window.history.replaceState({}, '', `${next.pathname}${next.search}`)
   }, [])
 
+  // Shared links and notification deep links (?event=uuid)
   useEffect(() => {
-    const eventId = pendingSharedEventIdRef.current
+    const eventId = String(queuedEventId || '').trim()
     if (!eventId) return
+    setQueuedEventId('')
     pendingSharedEventIdRef.current = ''
     void openEventById(eventId)
     try {
@@ -261,7 +286,7 @@ function AppInner() {
       next.searchParams.delete('event')
       window.history.replaceState({}, '', `${next.pathname}${next.search}`)
     } catch {}
-  }, [openEventById])
+  }, [openEventById, queuedEventId])
 
   useEffect(() => {
     let active = true
@@ -491,10 +516,12 @@ function AppInner() {
           try {
             const when = new Date(startMs).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
             const place = event.address || `${event.location || ''}${event.city ? `, ${event.city}` : ''}`.trim()
-            new window.Notification(`Upcoming saved event: ${event.title}`, {
-              body: `${when}${place ? ` • ${place}` : ''}`,
-              icon: '/og-image.svg',
-            })
+            showEventNotification(
+              `Upcoming saved event: ${event.title}`,
+              { body: `${when}${place ? ` • ${place}` : ''}` },
+              event.id,
+              setQueuedEventId,
+            )
             eventLog[w.id] = true
             reminderLog[event.id] = eventLog
             changed = true
@@ -559,10 +586,12 @@ function AppInner() {
           ) {
             const eventTitle =
               events.find(e => e.id === eventId)?.title || schedule?.title || 'Saved event'
-            new window.Notification(`New host update: ${eventTitle}`, {
-              body: row.latest_update_message || 'The host posted a new update.',
-              icon: '/og-image.svg',
-            })
+            showEventNotification(
+              `New host update: ${eventTitle}`,
+              { body: row.latest_update_message || 'The host posted a new update.' },
+              eventId,
+              setQueuedEventId,
+            )
             nextNotified[eventId] = signature
           }
 
@@ -636,10 +665,12 @@ function AppInner() {
                 : status === 'delayed'
                   ? 'Delayed'
                   : 'Updated'
-            new window.Notification(`Status changed: ${eventTitle}`, {
-              body: note ? `${label} • ${note}` : label,
-              icon: '/og-image.svg',
-            })
+            showEventNotification(
+              `Status changed: ${eventTitle}`,
+              { body: note ? `${label} • ${note}` : label },
+              eventId,
+              setQueuedEventId,
+            )
             nextNotified[eventId] = signature
           }
 
