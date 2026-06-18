@@ -50,6 +50,10 @@ const DEFAULT_NEAR_ME_RADIUS_MILES = 25
 const MIN_NEAR_ME_RADIUS_MILES = 5
 const MAX_NEAR_ME_RADIUS_MILES = 100
 const NEAR_ME_RADIUS_STEP_MILES = 5
+const NEAR_ME_RADIUS_OPTIONS = Array.from(
+  { length: Math.floor((MAX_NEAR_ME_RADIUS_MILES - MIN_NEAR_ME_RADIUS_MILES) / NEAR_ME_RADIUS_STEP_MILES) + 1 },
+  (_, i) => MIN_NEAR_ME_RADIUS_MILES + i * NEAR_ME_RADIUS_STEP_MILES,
+)
 
 const clampNearMeRadiusMiles = (value) => {
   const radius = Number(value)
@@ -65,6 +69,27 @@ const getStoredNearMeRadiusMiles = () => {
   } catch {
     return DEFAULT_NEAR_ME_RADIUS_MILES
   }
+}
+
+const toDateKeyLocal = (d) => {
+  if (!(d instanceof Date) || !Number.isFinite(d.getTime())) return ''
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+const weekRangeKeysLocal = (now = new Date()) => {
+  const base = new Date(now)
+  if (!Number.isFinite(base.getTime())) return { startKey: '', endKey: '' }
+  base.setHours(12, 0, 0, 0)
+  const day = base.getDay() // 0=Sun, 1=Mon, ... 6=Sat
+  const mondayOffset = day === 0 ? -6 : 1 - day
+  const start = new Date(base)
+  start.setDate(base.getDate() + mondayOffset)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return { startKey: toDateKeyLocal(start), endKey: toDateKeyLocal(end) }
 }
 
 const eventStartMs = (event) => {
@@ -154,7 +179,7 @@ function AppInner() {
   const [nearMeCoords, setNearMeCoords] = useState(null)
   const [nearMeError, setNearMeError] = useState('')
   const [nearMeRadiusMiles, setNearMeRadiusMiles] = useState(getStoredNearMeRadiusMiles)
-  const [showNearMeRadiusSettings, setShowNearMeRadiusSettings] = useState(false)
+  const [thisWeekOnly, setThisWeekOnly] = useState(false)
 
   const [showImportQueue, setShowImportQueue] = useState(false)
   const [showModerationQueue, setShowModerationQueue] = useState(false)
@@ -510,7 +535,23 @@ function AppInner() {
       })
     : statusFilteredEvents
 
-  const upcomingCount = eventsForDisplay.filter(e => e.date >= new Date().toISOString().split('T')[0]).length
+  const { startKey: thisWeekStartKey, endKey: thisWeekEndKey } = weekRangeKeysLocal()
+
+  const eventsFilteredForWeek = thisWeekOnly
+    ? [...eventsForDisplay]
+      .filter(e => {
+        const k = String(e?.date || '')
+        if (!k || !thisWeekStartKey || !thisWeekEndKey) return false
+        return k >= thisWeekStartKey && k <= thisWeekEndKey
+      })
+      .sort((a, b) => {
+        const aStart = eventStartMs(a) ?? Number.POSITIVE_INFINITY
+        const bStart = eventStartMs(b) ?? Number.POSITIVE_INFINITY
+        return aStart - bStart
+      })
+    : eventsForDisplay
+
+  const upcomingCount = eventsFilteredForWeek.filter(e => e.date >= toDateKeyLocal(new Date())).length
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return
@@ -1164,23 +1205,53 @@ function AppInner() {
             {nearMeOnly ? '✓ Near Me' : 'Near Me'}
           </button>
 
+          {nearMeOnly && (
+            <select
+              value={nearMeRadiusMiles}
+              onChange={e => setNearMeRadiusMiles(clampNearMeRadiusMiles(e.target.value))}
+              aria-label="Near Me radius"
+              title="Adjust the Near Me search radius"
+              style={{
+                padding: '5px 28px 5px 10px', borderRadius: 20, border: '1px solid #FF6B35',
+                background: isLight ? '#FFF3ED' : '#20140F',
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700,
+                color: isLight ? '#D1491A' : '#FF8A5C',
+                textTransform: 'uppercase',
+                letterSpacing: 0.3,
+                transition: 'all 0.15s',
+                flexShrink: 0,
+              }}
+            >
+              {NEAR_ME_RADIUS_OPTIONS.map(radius => (
+                <option key={radius} value={radius}>
+                  {radius} mi
+                </option>
+              ))}
+            </select>
+          )}
+
           <button
-            onClick={() => setShowNearMeRadiusSettings(open => !open)}
+            onClick={() => setThisWeekOnly(v => !v)}
             style={{
               padding: '5px 10px', borderRadius: 20, border: '1px solid',
-              borderColor: showNearMeRadiusSettings ? '#FF6B35' : filterChipBorder,
-              background: showNearMeRadiusSettings ? (isLight ? '#FFF3ED' : '#20140F') : filterChipBg,
+              borderColor: thisWeekOnly ? '#FF6B35' : filterChipBorder,
+              background: thisWeekOnly ? (isLight ? '#FFF3ED' : '#222') : filterChipBg,
               cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-              color: showNearMeRadiusSettings ? (isLight ? '#D1491A' : '#FF8A5C') : filterChipText,
+              color: thisWeekOnly ? (isLight ? '#D1491A' : '#aaa') : filterChipText,
               textTransform: 'uppercase',
               letterSpacing: 0.3,
               transition: 'all 0.15s',
               flexShrink: 0,
             }}
-            title="Adjust the Near Me search radius"
+            title={
+              thisWeekOnly && thisWeekStartKey && thisWeekEndKey
+                ? `Showing events ${thisWeekStartKey} to ${thisWeekEndKey}`
+                : 'Show only events happening this week'
+            }
           >
-            Radius: {nearMeRadiusMiles} mi
+            {thisWeekOnly ? '✓ This Week' : 'This Week'}
           </button>
 
           {['meet', 'car show', 'track day', 'cruise'].map(t => (
@@ -1359,98 +1430,13 @@ function AppInner() {
         </div>
       </nav>
 
-      {showNearMeRadiusSettings && (
-        <div
-          style={{
-            padding: '10px 16px',
-            borderBottom: `1px solid ${isLight ? '#F0C3B3' : '#3A241C'}`,
-            background: isLight ? '#FFF8F5' : '#140D0A',
-            color: isLight ? '#222' : '#F0F0F0',
-            fontFamily: "'DM Sans', sans-serif",
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            flexWrap: 'wrap',
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ minWidth: 170 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>
-              Near Me Radius
-            </div>
-            <div style={{ fontSize: 12, color: isLight ? '#6B625E' : '#A8A8A8' }}>
-              Showing events within {nearMeRadiusMiles} miles.
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 260px' }}>
-            <span style={{ color: isLight ? '#6B625E' : '#A8A8A8', fontSize: 11 }}>
-              {MIN_NEAR_ME_RADIUS_MILES} mi
-            </span>
-            <input
-              type="range"
-              min={MIN_NEAR_ME_RADIUS_MILES}
-              max={MAX_NEAR_ME_RADIUS_MILES}
-              step={NEAR_ME_RADIUS_STEP_MILES}
-              value={nearMeRadiusMiles}
-              onChange={e => setNearMeRadiusMiles(clampNearMeRadiusMiles(e.target.value))}
-              aria-label="Near Me radius in miles"
-              style={{ width: '100%', accentColor: '#FF6B35' }}
-            />
-            <span style={{ color: isLight ? '#6B625E' : '#A8A8A8', fontSize: 11 }}>
-              {MAX_NEAR_ME_RADIUS_MILES} mi
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[10, 25, 50, 100].map(radius => (
-              <button
-                key={radius}
-                type="button"
-                onClick={() => setNearMeRadiusMiles(radius)}
-                style={{
-                  border: '1px solid',
-                  borderColor: nearMeRadiusMiles === radius ? '#FF6B35' : filterChipBorder,
-                  borderRadius: 999,
-                  background: nearMeRadiusMiles === radius ? (isLight ? '#FFE8DE' : '#26140E') : (isLight ? '#FFFFFF' : '#1A1A1A'),
-                  color: nearMeRadiusMiles === radius ? '#D1491A' : filterChipText,
-                  cursor: 'pointer',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: '5px 10px',
-                }}
-              >
-                {radius} mi
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowNearMeRadiusSettings(false)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: isLight ? '#6B625E' : '#A8A8A8',
-              cursor: 'pointer',
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 18,
-              lineHeight: 1,
-              padding: 4,
-              marginLeft: 'auto',
-            }}
-            aria-label="Close radius settings"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {/* MAIN CONTENT — map left, list right */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* MAP — left side, takes remaining space */}
         <div style={{ flex: 1, minWidth: 520, position: 'relative' }}>
           <MapView
-            events={eventsForDisplay}
+            events={eventsFilteredForWeek}
             selectedEvent={selectedEvent}
             hoveredEvent={hoveredEvent}
             onEventClick={handleEventClick}
@@ -1467,7 +1453,7 @@ function AppInner() {
             <FirstEventNudge userId={user?.id} onPost={() => (user ? setShowPost(true) : setShowAuth(true))} />
           </div>
           <EventPanel
-            events={eventsForDisplay}
+            events={eventsFilteredForWeek}
             loading={loading}
             selectedEvent={selectedEvent}
             onEventClick={handleEventClick}
