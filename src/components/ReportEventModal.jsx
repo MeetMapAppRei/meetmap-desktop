@@ -60,7 +60,7 @@ export default function ReportEventModal({ event, user, onAuthNeeded, onClose, o
         position: 'fixed',
         inset: 0,
         background: overlayBg,
-        zIndex: 1500,
+        zIndex: 100010,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

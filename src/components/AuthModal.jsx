@@ -101,7 +101,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login' })
         position: 'fixed',
         inset: 0,
         background: 'rgba(0,0,0,0.85)',
-        zIndex: 1000,
+        zIndex: 100000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

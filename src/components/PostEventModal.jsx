@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createEvent, uploadEventPhoto } from "../lib/supabase";
 import { geocodeAddress } from "../lib/geocode";
 import { buildEventLocationQuery } from "../lib/eventLocation";
@@ -88,8 +88,20 @@ export default function PostEventModal({ user, onClose, onPosted }) {
   const [geocoding, setGeocoding] = useState(false);
   const [addressStatus, setAddressStatus] = useState("");
   const [error, setError] = useState("");
+  const [isNarrowModal, setIsNarrowModal] = useState(() =>
+    typeof window === "undefined" ? false : window.matchMedia("(max-width: 720px)").matches,
+  );
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const media = window.matchMedia("(max-width: 720px)");
+    const sync = () => setIsNarrowModal(media.matches);
+    sync();
+    media.addEventListener?.("change", sync);
+    return () => media.removeEventListener?.("change", sync);
+  }, []);
 
   const handleFlyerUpload = async (e) => {
     const file = e.target.files[0];
@@ -241,27 +253,28 @@ export default function PostEventModal({ user, onClose, onPosted }) {
         position: "fixed",
         inset: 0,
         background: "rgba(0,0,0,0.85)",
-        zIndex: 1000,
+        zIndex: 100000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
+        padding: isNarrowModal ? 12 : 24,
       }}
     >
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <div
         style={{
           width: "100%",
-          maxWidth: 600,
+          maxWidth: isNarrowModal ? "calc(100vw - 24px)" : 640,
           background: "#0F0F0F",
           borderRadius: 16,
           border: "1px solid #1A1A1A",
           overflow: "hidden",
-          maxHeight: "90vh",
+          maxHeight: isNarrowModal ? "calc(100dvh - 24px)" : "90vh",
           overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
-        <div style={{ padding: "24px 28px 32px" }}>
+        <div style={{ padding: isNarrowModal ? "20px 18px 24px" : "24px 28px 32px" }}>
           <div
             style={{
               display: "flex",
@@ -317,13 +330,14 @@ export default function PostEventModal({ user, onClose, onPosted }) {
             <div style={{ fontSize: 30 }}>
               {scanning ? "⏳" : flyerSuccess ? "✅" : "📸"}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
                   fontFamily: "'Bebas Neue'",
                   fontSize: 18,
                   letterSpacing: 1.5,
                   color: flyerSuccess ? "#7CFF6B" : "#FF6B35",
+                  overflowWrap: "anywhere",
                 }}
               >
                 {scanning
@@ -338,6 +352,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
                   fontSize: 12,
                   color: "#555",
                   marginTop: 2,
+                  overflowWrap: "anywhere",
                 }}
               >
                 {scanning
@@ -389,8 +404,8 @@ export default function PostEventModal({ user, onClose, onPosted }) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "0 24px",
+              gridTemplateColumns: isNarrowModal ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: isNarrowModal ? 0 : "0 24px",
             }}
           >
             <div>
@@ -444,7 +459,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
               <label style={lbl}>Event Type</label>
               <select
-                style={{ ...inp, appearance: "none" }}
+                style={{ ...inp, appearance: "none", minWidth: 0 }}
                 value={form.type}
                 onChange={(e) => set("type", e.target.value)}
               >
@@ -456,7 +471,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
               <label style={lbl}>Event Name *</label>
               <input
-                style={inp}
+                style={{ ...inp, minWidth: 0 }}
                 placeholder="Sunday Funday Car Meet"
                 value={form.title}
                 onChange={(e) => set("title", e.target.value)}
@@ -464,7 +479,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
               <label style={lbl}>Hosted By</label>
               <input
-                style={inp}
+                style={{ ...inp, minWidth: 0 }}
                 placeholder="Your crew or org"
                 value={form.host}
                 onChange={(e) => set("host", e.target.value)}
@@ -472,7 +487,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
               <label style={lbl}>Tags (comma separated)</label>
               <input
-                style={inp}
+                style={{ ...inp, minWidth: 0 }}
                 placeholder="JDM, Stance, All Welcome"
                 value={form.tags}
                 onChange={(e) => set("tags", e.target.value)}
@@ -485,6 +500,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
                 style={{
                   ...inp,
                   marginBottom: 4,
+                  minWidth: 0,
                   borderColor:
                     addressStatus === "found" ? "#FF6B3555" : "#1E1E1E",
                 }}
@@ -520,7 +536,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
               <label style={lbl}>Venue / Spot Name (optional)</label>
               <input
-                style={inp}
+                style={{ ...inp, minWidth: 0 }}
                 placeholder="AutoZone Parking, Walmart Lot"
                 value={form.location}
                 onChange={(e) => set("location", e.target.value)}
@@ -528,7 +544,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
 
               <label style={lbl}>City, State *</label>
               <input
-                style={inp}
+                style={{ ...inp, minWidth: 0 }}
                 placeholder="Riverside, CA"
                 value={form.city}
                 onChange={(e) => set("city", e.target.value)}
@@ -537,14 +553,14 @@ export default function PostEventModal({ user, onClose, onPosted }) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
+                  gridTemplateColumns: isNarrowModal ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                  gap: isNarrowModal ? 0 : 10,
                 }}
               >
                 <div>
                   <label style={lbl}>Date *</label>
                   <input
-                    style={inp}
+                    style={{ ...inp, minWidth: 0 }}
                     type="date"
                     value={form.date}
                     onChange={(e) => set("date", e.target.value)}
@@ -553,7 +569,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
                 <div>
                   <label style={lbl}>Time</label>
                   <input
-                    style={inp}
+                    style={{ ...inp, minWidth: 0 }}
                     type="time"
                     value={form.time}
                     onChange={(e) => set("time", e.target.value)}
@@ -567,7 +583,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
                 rows={4}
-                style={{ ...inp, resize: "none" }}
+                style={{ ...inp, resize: "none", minWidth: 0 }}
               />
             </div>
           </div>

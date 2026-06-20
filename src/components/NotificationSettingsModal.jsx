@@ -81,7 +81,7 @@ export default function NotificationSettingsModal({
         position: 'fixed',
         inset: 0,
         background: isLight ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.9)',
-        zIndex: 1000,
+        zIndex: 100000,
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'center',
