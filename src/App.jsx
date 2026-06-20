@@ -2000,6 +2000,7 @@ function AppInner() {
       {/* MODALS */}
       {selectedEvent && (
         <EventDetail
+          key={selectedEvent.id}
           event={selectedEvent}
           user={user}
           saved={savedEventIds.includes(selectedEvent.id)}
