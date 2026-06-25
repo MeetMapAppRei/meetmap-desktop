@@ -99,6 +99,14 @@ const fetchEventRsvpStatsMap = async (eventIds) => {
   return map
 }
 
+const fetchProfilesByIds = async (userIds) => {
+  const ids = Array.from(new Set((userIds || []).filter(Boolean)))
+  if (!ids.length) return {}
+  const { data, error } = await supabase.from('profiles').select('id, username, avatar_url').in('id', ids)
+  if (error) throw error
+  return Object.fromEntries((data || []).map((profile) => [profile.id, profile]))
+}
+
 export const fetchEventStatuses = async (eventIds) => {
   if (!Array.isArray(eventIds) || eventIds.length === 0) return {}
   const { data, error } = await supabase
@@ -140,7 +148,7 @@ export const fetchEvents = async (filters = {}) => {
   let query = supabase
     .from('events')
     // Explicitly include `address` so the UI can always display the full street address.
-    .select('*, profiles(username, avatar_url), event_attendees(count)')
+    .select('*, event_attendees(count)')
     .order('date', { ascending: true })
   if (filters.type && filters.type !== 'all') query = query.eq('type', filters.type)
   if (filters.search) query = query.or(`title.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
@@ -153,43 +161,20 @@ export const fetchEvents = async (filters = {}) => {
   const { data, error } = await query
   if (error) throw error
   const rows = data || []
-  try {
-    const statusMap = await fetchEventStatusMap(rows.map(e => e.id))
-    const updateMap = await fetchLatestEventUpdateMap(rows.map(e => e.id))
-    const rsvpMap = await fetchEventRsvpStatsMap(rows.map(e => e.id))
-    return rows.map(e => ({
-      ...e,
-      status: statusMap[e.id]?.status || 'active',
-      status_note: statusMap[e.id]?.status_note || '',
-      latest_update_id: updateMap[e.id]?.latest_update_id || '',
-      latest_update_message: updateMap[e.id]?.latest_update_message || '',
-      latest_update_created_at: updateMap[e.id]?.latest_update_created_at || '',
-      interested_count: rsvpMap[e.id]?.interested_count || 0,
-      going_count: rsvpMap[e.id]?.going_count || 0,
-    }))
-  } catch {
-    return rows.map(e => ({
-      ...e,
-      status: 'active',
-      status_note: '',
-      latest_update_id: '',
-      latest_update_message: '',
-      latest_update_created_at: '',
-      interested_count: 0,
-      going_count: e.event_attendees?.[0]?.count || 0,
-    }))
-  }
+  return enrichEventRows(rows)
 }
 
 const enrichEventRows = async (rows) => {
   if (!Array.isArray(rows) || rows.length === 0) return []
   try {
     const ids = rows.map(e => e.id)
+    const profileMap = await fetchProfilesByIds(rows.map(e => e.user_id))
     const statusMap = await fetchEventStatusMap(ids)
     const updateMap = await fetchLatestEventUpdateMap(ids)
     const rsvpMap = await fetchEventRsvpStatsMap(ids)
     return rows.map(e => ({
       ...e,
+      profiles: profileMap[e.user_id] || e.profiles || null,
       status: statusMap[e.id]?.status || 'active',
       status_note: statusMap[e.id]?.status_note || '',
       latest_update_id: updateMap[e.id]?.latest_update_id || '',
@@ -201,6 +186,7 @@ const enrichEventRows = async (rows) => {
   } catch {
     return rows.map(e => ({
       ...e,
+      profiles: e.profiles || null,
       status: 'active',
       status_note: '',
       latest_update_id: '',
@@ -217,7 +203,7 @@ export const fetchEventById = async (eventId) => {
   if (!id) return null
   const { data, error } = await supabase
     .from('events')
-    .select('*, profiles(username, avatar_url), event_attendees(count)')
+    .select('*, event_attendees(count)')
     .eq('id', id)
     .maybeSingle()
   if (error) throw error
