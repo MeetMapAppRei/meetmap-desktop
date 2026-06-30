@@ -12,6 +12,7 @@ import {
   createFlyerImport,
   updateFlyerImportStatus,
   updateFlyerImport,
+  fetchDailyFlyerImportReview,
   uploadFlyerImportImage,
   fetchSavedEventIds,
   setSavedEventStatus,
@@ -38,11 +39,12 @@ import {
 } from "./lib/notificationPreferences";
 import ImportQueueModal from "./components/ImportQueueModal";
 import ModerationQueueModal from "./components/ModerationQueueModal";
-import PlayStoreBanner from "./components/PlayStoreBanner";
 import FirstEventNudge from "./components/FirstEventNudge";
+import PlayStoreBanner from "./components/PlayStoreBanner";
 import HeaderOptionsMenu from "./components/HeaderOptionsMenu";
 import { geocodeAddress } from "./lib/geocode";
 import { buildEventLocationQuery } from "./lib/eventLocation";
+import AutoImportReviewModal from "./components/AutoImportReviewModal";
 
 const parseCsvEnv = (value) =>
   String(value || "")
@@ -278,6 +280,11 @@ function AppInner() {
   const [moderationLoading, setModerationLoading] = useState(false);
   const [moderationResolvingReportId, setModerationResolvingReportId] =
     useState(null);
+  const [showAutoImportReview, setShowAutoImportReview] = useState(false);
+  const [autoImportRuns, setAutoImportRuns] = useState([]);
+  const [autoImportCandidates, setAutoImportCandidates] = useState([]);
+  const [autoImportLoading, setAutoImportLoading] = useState(false);
+  const [autoImportError, setAutoImportError] = useState("");
   const [approvingImportId, setApprovingImportId] = useState(null);
   const [importProcessing, setImportProcessing] = useState(false);
   const [importParams, setImportParams] = useState(null); // { sourceUrl, imageUrl }
@@ -1044,6 +1051,22 @@ function AppInner() {
     }
   };
 
+  const loadAutoImportReview = async () => {
+    if (!user || !canAccessImports) return;
+    setAutoImportLoading(true);
+    setAutoImportError("");
+    try {
+      const data = await fetchDailyFlyerImportReview(new Date());
+      setAutoImportRuns(data.runs || []);
+      setAutoImportCandidates(data.candidates || []);
+    } catch (e) {
+      console.error("Failed to load auto-import review:", e);
+      setAutoImportError(e?.message || "Failed to load auto-import review");
+    } finally {
+      setAutoImportLoading(false);
+    }
+  };
+
   const handleResolveReport = async (reportId) => {
     if (!user) return;
     setModerationResolvingReportId(reportId);
@@ -1109,6 +1132,12 @@ function AppInner() {
     if (!user || !canAccessImports) return;
     loadPendingModerationReports();
   }, [showModerationQueue, user, canAccessImports]);
+
+  useEffect(() => {
+    if (!showAutoImportReview) return;
+    if (!user || !canAccessImports) return;
+    loadAutoImportReview();
+  }, [showAutoImportReview, user, canAccessImports]);
 
   useEffect(() => {
     if (!importParams) return;
@@ -1813,6 +1842,7 @@ function AppInner() {
             canAccessImports={canAccessImports}
             pendingImportsCount={imports.length}
             onOpenImports={() => setShowImportQueue(true)}
+            onOpenAutoImports={() => setShowAutoImportReview(true)}
             onOpenModeration={() => setShowModerationQueue(true)}
             topBtnBg={topBtnBg}
             topBtnBorder={topBtnBorder}
@@ -2054,6 +2084,15 @@ function AppInner() {
           uploading={importUploading}
           onPickUpload={handleUploadFlyer}
           onClose={() => setShowImportQueue(false)}
+        />
+      )}
+      {showAutoImportReview && canAccessImports && (
+        <AutoImportReviewModal
+          runs={autoImportRuns}
+          candidates={autoImportCandidates}
+          loading={autoImportLoading}
+          errorMessage={autoImportError}
+          onClose={() => setShowAutoImportReview(false)}
         />
       )}
       {showModerationQueue && canAccessImports && (

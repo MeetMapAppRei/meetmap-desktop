@@ -1,198 +1,210 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useTheme } from '../lib/ThemeContext'
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTheme } from "../lib/ThemeContext";
 
-const STORAGE_KEY = 'meetmap:android-app-promo-snooze-until'
-const SNOOZE_MS = 10 * 24 * 60 * 60 * 1000
-const DESKTOP_MQ = '(min-width: 768px)'
+const STORAGE_KEY = "meetmap:mobile-app-promo-snooze-until";
+const SNOOZE_MS = 10 * 24 * 60 * 60 * 1000;
+const DESKTOP_MQ = "(min-width: 768px)";
 
-const defaultPlayUrl = 'https://play.google.com/store/apps/details?id=com.meetmap.app'
+const defaultPlayUrl =
+  "https://play.google.com/store/apps/details?id=com.meetmap.app";
+const defaultAppStoreUrl =
+  "https://apps.apple.com/us/app/meet-map-car-meets/id6775626296";
 
 function readSnoozeUntil() {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return 0
-    const n = Number(raw)
-    return Number.isFinite(n) ? n : 0
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return 0;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
   } catch {
-    return 0
+    return 0;
   }
 }
 
 function useDesktopLayout() {
   const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia(DESKTOP_MQ).matches : false,
-  )
+    typeof window !== "undefined"
+      ? window.matchMedia(DESKTOP_MQ).matches
+      : false,
+  );
   useEffect(() => {
-    const mq = window.matchMedia(DESKTOP_MQ)
-    const apply = () => setIsDesktop(mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [])
-  return isDesktop
+    const mq = window.matchMedia(DESKTOP_MQ);
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return isDesktop;
 }
 
-const bebas = "'Bebas Neue', 'Impact', sans-serif"
-const dm = "'DM Sans', sans-serif"
+const bebas = "'Bebas Neue', 'Impact', sans-serif";
+const dm = "'DM Sans', sans-serif";
 
 export default function PlayStoreBanner() {
-  const { isLight } = useTheme()
-  const [visible, setVisible] = useState(false)
-  const isDesktopLayout = useDesktopLayout()
-  const barRef = useRef(null)
+  const { isLight } = useTheme();
+  const [visible, setVisible] = useState(false);
+  const isDesktopLayout = useDesktopLayout();
+  const barRef = useRef(null);
 
   const playUrl =
-    String(import.meta.env.VITE_PLAY_STORE_URL || defaultPlayUrl).trim() || defaultPlayUrl
-  const placement = isDesktopLayout ? 'top' : 'bottom'
+    String(import.meta.env.VITE_PLAY_STORE_URL || defaultPlayUrl).trim() ||
+    defaultPlayUrl;
+  const appStoreUrl =
+    String(import.meta.env.VITE_APP_STORE_URL || defaultAppStoreUrl).trim() ||
+    defaultAppStoreUrl;
+  const placement = isDesktopLayout ? "top" : "bottom";
 
   useEffect(() => {
     // On desktop (findcarmeets.com), keep this banner reliably visible.
     // On mobile, respect a snooze so it doesn't keep covering UI.
     if (isDesktopLayout) {
-      setVisible(true)
-      return
+      setVisible(true);
+      return;
     }
-    const until = readSnoozeUntil()
-    if (Date.now() < until) return
-    setVisible(true)
-  }, [isDesktopLayout])
+    const until = readSnoozeUntil();
+    if (Date.now() < until) return;
+    setVisible(true);
+  }, [isDesktopLayout]);
 
   useLayoutEffect(() => {
-    if (typeof document === 'undefined') return undefined
-    if (!visible || placement !== 'top') {
-      document.documentElement.style.removeProperty('--meetmap-play-promo-top')
-      return undefined
+    if (typeof document === "undefined") return undefined;
+    if (!visible || placement !== "top") {
+      document.documentElement.style.removeProperty("--meetmap-play-promo-top");
+      return undefined;
     }
-    const el = barRef.current
-    if (!el) return undefined
+    const el = barRef.current;
+    if (!el) return undefined;
     const sync = () => {
-      const h = el.getBoundingClientRect().height
-      document.documentElement.style.setProperty('--meetmap-play-promo-top', `${Math.ceil(h)}px`)
-    }
-    sync()
-    const ro = new ResizeObserver(sync)
-    ro.observe(el)
-    window.addEventListener('resize', sync)
+      const h = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty(
+        "--meetmap-play-promo-top",
+        `${Math.ceil(h)}px`,
+      );
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    window.addEventListener("resize", sync);
     return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', sync)
-      document.documentElement.style.removeProperty('--meetmap-play-promo-top')
-    }
-  }, [visible, placement])
+      ro.disconnect();
+      window.removeEventListener("resize", sync);
+      document.documentElement.style.removeProperty("--meetmap-play-promo-top");
+    };
+  }, [visible, placement]);
 
   const snooze = () => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, String(Date.now() + SNOOZE_MS))
+      window.localStorage.setItem(STORAGE_KEY, String(Date.now() + SNOOZE_MS));
     } catch {}
-    setVisible(false)
-  }
+    setVisible(false);
+  };
 
-  if (!visible || typeof document === 'undefined') return null
+  if (!visible || typeof document === "undefined") return null;
 
-  const border = isLight ? '#E5E5E5' : '#2A2A2A'
-  const bg = isLight ? '#FFFFFF' : '#141414'
-  const text = isLight ? '#222' : '#E8E8E8'
-  const muted = isLight ? '#666' : '#9A9A9A'
+  const border = isLight ? "#E5E5E5" : "#2A2A2A";
+  const bg = isLight ? "#FFFFFF" : "#141414";
+  const text = isLight ? "#222" : "#E8E8E8";
+  const muted = isLight ? "#666" : "#9A9A9A";
 
   const btnPrimary = {
-    background: '#FF6B35',
-    color: '#0A0A0A',
+    background: "#FF6B35",
+    color: "#0A0A0A",
     fontFamily: bebas,
     fontSize: 14,
     letterSpacing: 1.05,
-    textDecoration: 'none',
+    textDecoration: "none",
     borderRadius: 8,
-    padding: '8px 14px',
+    padding: "8px 14px",
     fontWeight: 600,
-    whiteSpace: 'nowrap',
-  }
+    whiteSpace: "nowrap",
+  };
 
   const btnGhost = {
-    background: 'transparent',
+    background: "transparent",
     border: `1px solid ${border}`,
     borderRadius: 8,
-    padding: '7px 12px',
+    padding: "7px 12px",
     fontFamily: dm,
     fontSize: 12,
     fontWeight: 600,
     color: text,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  }
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
 
   const dismissBtn = {
     flexShrink: 0,
-    background: 'none',
-    border: 'none',
+    background: "none",
+    border: "none",
     color: muted,
     fontSize: 22,
     lineHeight: 1,
-    cursor: 'pointer',
-    padding: '0 4px',
-  }
+    cursor: "pointer",
+    padding: "0 4px",
+  };
 
   const outer =
-    placement === 'top'
+    placement === "top"
       ? {
-          position: 'fixed',
+          position: "fixed",
           left: 0,
           right: 0,
-          top: 'env(safe-area-inset-top, 0px)',
-          bottom: 'auto',
+          top: "env(safe-area-inset-top, 0px)",
+          bottom: "auto",
           zIndex: 99999,
-          padding: '10px 16px',
-          paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
-          paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+          padding: "10px 16px",
+          paddingLeft: "max(16px, env(safe-area-inset-left, 0px))",
+          paddingRight: "max(16px, env(safe-area-inset-right, 0px))",
           background: bg,
           borderBottom: `1px solid ${border}`,
           boxShadow: isLight
-            ? '0 4px 24px rgba(0,0,0,0.08)'
-            : '0 4px 24px rgba(0,0,0,0.5)',
+            ? "0 4px 24px rgba(0,0,0,0.08)"
+            : "0 4px 24px rgba(0,0,0,0.5)",
         }
       : {
-          position: 'fixed',
+          position: "fixed",
           left: 0,
           right: 0,
           bottom: 0,
-          top: 'auto',
+          top: "auto",
           zIndex: 99999,
-          padding: '12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',
-          paddingLeft: 'max(14px, env(safe-area-inset-left, 0px))',
-          paddingRight: 'max(14px, env(safe-area-inset-right, 0px))',
+          padding: "12px 14px calc(12px + env(safe-area-inset-bottom, 0px))",
+          paddingLeft: "max(14px, env(safe-area-inset-left, 0px))",
+          paddingRight: "max(14px, env(safe-area-inset-right, 0px))",
           background: bg,
           borderTop: `1px solid ${border}`,
           boxShadow: isLight
-            ? '0 -8px 32px rgba(0,0,0,0.08)'
-            : '0 -8px 32px rgba(0,0,0,0.45)',
-        }
+            ? "0 -8px 32px rgba(0,0,0,0.08)"
+            : "0 -8px 32px rgba(0,0,0,0.45)",
+        };
 
   const shell = (
     <div
-      ref={placement === 'top' ? barRef : undefined}
+      ref={placement === "top" ? barRef : undefined}
       role="dialog"
-      aria-label="Get the Meet Map Android app"
+      aria-label="Get the Meet Map mobile app"
       style={outer}
     >
-      {placement === 'top' ? (
+      {placement === "top" ? (
         <div
           style={{
             maxWidth: 1100,
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             gap: 14,
-            flexWrap: 'wrap',
+            flexWrap: "wrap",
           }}
         >
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 12,
               minWidth: 0,
-              flex: '1 1 220px',
+              flex: "1 1 220px",
             }}
           >
             <span
@@ -200,23 +212,55 @@ export default function PlayStoreBanner() {
                 fontFamily: bebas,
                 fontSize: 16,
                 letterSpacing: 1.2,
-                color: '#FF6B35',
+                color: "#FF6B35",
               }}
             >
-              ANDROID APP ON GOOGLE PLAY
+              MEET MAP IS ON IOS AND ANDROID
             </span>
-            <span style={{ fontFamily: dm, fontSize: 12, color: muted, fontWeight: 500 }}>
-              Alerts for saved meets and a faster map.
+            <span
+              style={{
+                fontFamily: dm,
+                fontSize: 12,
+                color: muted,
+                fontWeight: 500,
+              }}
+            >
+              Download the app for saved-meet alerts and a faster map.
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <a href={playUrl} target="_blank" rel="noopener noreferrer" style={btnPrimary}>
-              OPEN PLAY STORE
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <a
+              href={appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={btnPrimary}
+            >
+              APP STORE
+            </a>
+            <a
+              href={playUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={btnPrimary}
+            >
+              GOOGLE PLAY
             </a>
             <button type="button" onClick={snooze} style={btnGhost}>
               Maybe later
             </button>
-            <button type="button" onClick={snooze} aria-label="Dismiss" style={dismissBtn}>
+            <button
+              type="button"
+              onClick={snooze}
+              aria-label="Dismiss"
+              style={dismissBtn}
+            >
               ×
             </button>
           </div>
@@ -225,18 +269,18 @@ export default function PlayStoreBanner() {
         <div
           style={{
             maxWidth: 960,
-            width: '100%',
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
+            width: "100%",
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
             gap: 10,
           }}
         >
           <div
             style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
               gap: 10,
             }}
           >
@@ -246,11 +290,11 @@ export default function PlayStoreBanner() {
                   fontFamily: bebas,
                   fontSize: 17,
                   letterSpacing: 1.2,
-                  color: '#FF6B35',
+                  color: "#FF6B35",
                   marginBottom: 4,
                 }}
               >
-                GET THE ANDROID APP
+                GET THE MEET MAP APP
               </div>
               <p
                 style={{
@@ -261,36 +305,67 @@ export default function PlayStoreBanner() {
                   fontWeight: 500,
                 }}
               >
-                Faster map, alerts for saved meets, and the same community — now on Google Play.
+                Meet Map is now available on iOS and Android with saved-meet
+                alerts and a faster map.
               </p>
             </div>
-            <button type="button" onClick={snooze} aria-label="Dismiss" style={dismissBtn}>
+            <button
+              type="button"
+              onClick={snooze}
+              aria-label="Dismiss"
+              style={dismissBtn}
+            >
               ×
             </button>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              alignItems: "center",
+            }}
+          >
+            <a
+              href={appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                ...btnPrimary,
+                flex: "1 1 140px",
+                textAlign: "center",
+                fontSize: 15,
+                padding: "10px 14px",
+              }}
+            >
+              APP STORE
+            </a>
             <a
               href={playUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{
                 ...btnPrimary,
-                flex: '1 1 140px',
-                textAlign: 'center',
+                flex: "1 1 140px",
+                textAlign: "center",
                 fontSize: 15,
-                padding: '10px 14px',
+                padding: "10px 14px",
               }}
             >
-              OPEN PLAY STORE
+              GOOGLE PLAY
             </a>
-            <button type="button" onClick={snooze} style={{ ...btnGhost, flex: '1 1 120px' }}>
+            <button
+              type="button"
+              onClick={snooze}
+              style={{ ...btnGhost, flex: "1 1 120px" }}
+            >
               Maybe later
             </button>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 
-  return createPortal(shell, document.body)
+  return createPortal(shell, document.body);
 }
