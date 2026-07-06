@@ -165,11 +165,13 @@ export const createEventUpdate = async (eventId, userId, message) => {
   return data;
 };
 
+const EVENT_LIST_SELECT =
+  "id, user_id, title, type, date, time, location, city, address, lat, lng, description, tags, host, photo_url, featured, created_at, moderation_status";
+
 export const fetchEvents = async (filters = {}) => {
   let query = supabase
     .from("events")
-    // Explicitly include `address` so the UI can always display the full street address.
-    .select("*, event_attendees(count)")
+    .select(`${EVENT_LIST_SELECT}, event_attendees(count)`)
     .order("date", { ascending: true });
   if (filters.type && filters.type !== "all")
     query = query.eq("type", filters.type);
