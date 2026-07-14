@@ -3,6 +3,31 @@ import { createEvent, uploadEventPhoto } from "../lib/supabase";
 import { geocodeAddress } from "../lib/geocode";
 import { buildEventLocationQuery } from "../lib/eventLocation";
 
+const ALLOWED_EVENT_TYPES = ["meet", "car show", "track day", "cruise"];
+
+function normalizeEventType(raw, fallback = "meet") {
+  const cleaned = String(raw ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+  if (ALLOWED_EVENT_TYPES.includes(cleaned)) return cleaned;
+  if (
+    cleaned.includes("track") ||
+    cleaned.includes("drag") ||
+    cleaned.includes("race")
+  ) {
+    return "track day";
+  }
+  if (cleaned.includes("cruise")) return "cruise";
+  if (cleaned.includes("show")) return "car show";
+  if (cleaned.includes("meet")) return "meet";
+  const fb = String(fallback ?? "meet")
+    .trim()
+    .toLowerCase();
+  return ALLOWED_EVENT_TYPES.includes(fb) ? fb : "meet";
+}
+
 function userMessageForFlyerScanError(message) {
   const m = String(message || "").trim();
   if (!m) return "";
@@ -130,7 +155,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
       setForm((prev) => ({
         ...prev,
         title: info.title || prev.title,
-        type: info.type || prev.type,
+        type: normalizeEventType(info.type, prev.type),
         date: info.date || prev.date,
         time: info.time || prev.time,
         location: info.location || prev.location,
@@ -214,7 +239,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
         .filter(Boolean);
       const payload = {
         title: form.title,
-        type: form.type,
+        type: normalizeEventType(form.type),
         date: form.date,
         time: form.time,
         location: form.location,

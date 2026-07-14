@@ -20,6 +20,31 @@ const normalizeStatus = (value) => {
   return ["active", "moved", "delayed", "canceled"].includes(v) ? v : "active";
 };
 
+const ALLOWED_EVENT_TYPES = ["meet", "car show", "track day", "cruise"];
+
+function normalizeEventType(raw, fallback = "meet") {
+  const cleaned = String(raw ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+  if (ALLOWED_EVENT_TYPES.includes(cleaned)) return cleaned;
+  if (
+    cleaned.includes("track") ||
+    cleaned.includes("drag") ||
+    cleaned.includes("race")
+  ) {
+    return "track day";
+  }
+  if (cleaned.includes("cruise")) return "cruise";
+  if (cleaned.includes("show")) return "car show";
+  if (cleaned.includes("meet")) return "meet";
+  const fb = String(fallback ?? "meet")
+    .trim()
+    .toLowerCase();
+  return ALLOWED_EVENT_TYPES.includes(fb) ? fb : "meet";
+}
+
 const DUPLICATE_EVENT_MESSAGE =
   "An event with the same title, date, and city already exists. Please edit the existing event instead.";
 
@@ -256,7 +281,13 @@ export const fetchEventScheduleByIds = async (eventIds) => {
 export const createEvent = async (eventData, userId) => {
   const { data, error } = await supabase
     .from("events")
-    .insert([{ ...eventData, user_id: userId }])
+    .insert([
+      {
+        ...eventData,
+        type: normalizeEventType(eventData?.type),
+        user_id: userId,
+      },
+    ])
     .select(
       "id, user_id, title, type, date, time, location, city, address, lat, lng, description, tags, host, photo_url, featured, created_at, event_attendees(count)",
     )
@@ -281,6 +312,9 @@ export const createEvent = async (eventData, userId) => {
 
 export const updateEvent = async (eventId, updates) => {
   const { status, status_note, ...eventUpdates } = updates || {};
+  if (Object.prototype.hasOwnProperty.call(eventUpdates, "type")) {
+    eventUpdates.type = normalizeEventType(eventUpdates.type);
+  }
   const { data, error } = await supabase
     .from("events")
     .update(eventUpdates)
