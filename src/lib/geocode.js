@@ -49,7 +49,7 @@ async function tryNominatim(query, country) {
   const res = await fetch(url, {
     headers: {
       Accept: 'application/json',
-      'User-Agent': 'MeetMap/1.0 (+https://findcarmeets.com)',
+      'User-Agent': 'MeetMap/1.0 (+https://www.findcarmeets.com)',
     },
   })
   if (!res.ok) return null

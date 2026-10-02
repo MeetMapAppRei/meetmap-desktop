@@ -4,7 +4,11 @@ import { useTheme } from '../lib/ThemeContext'
 import { getEventQuality } from '../lib/eventQuality'
 import ReportEventModal from './ReportEventModal'
 import { formatEventTime } from '../lib/formatEventTime'
-import { buildEventLocationQuery, getDirectionsUrl } from '../lib/eventLocation'
+import {
+  buildEventLocationQuery,
+  formatEventAddressLine,
+  getDirectionsUrl,
+} from '../lib/eventLocation'
 import { areEventCoordsPlausible, geocodeAddress } from '../lib/geocode'
 
 const TYPE_COLORS = { meet: '#FF6B35', 'car show': '#FFD700', 'track day': '#00D4FF', cruise: '#7CFF6B' }
@@ -502,7 +506,7 @@ export default function EventDetail({
                 </div>
               )}
 
-              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted2, marginBottom: 6 }}>📍 {event.address || `${event.location} · ${event.city}`}</div>
+              <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color: muted2, marginBottom: 6 }}>📍 {formatEventAddressLine(event)}</div>
               <div style={{ fontFamily: "'DM Sans'", fontSize: 14, color, fontWeight: 600, marginBottom: 6 }}>📅 {formatDate(event.date)}{event.time ? ` · ⏰ ${formatEventTime(event.time)}` : ''}</div>
               {event.host && <div style={{ fontFamily: "'DM Sans'", fontSize: 13, color: muted2, marginBottom: 14 }}>🎤 Hosted by <span style={{ color: isLight ? '#353535' : '#E0E0E0' }}>{event.host}</span></div>}
 

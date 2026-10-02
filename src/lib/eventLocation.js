@@ -45,6 +45,13 @@ export function buildEventLocationQuery(event) {
   return ''
 }
 
+/**
+ * Card/detail address line: always include city/state when the street line omits them.
+ */
+export function formatEventAddressLine(event) {
+  return buildEventLocationQuery(event)
+}
+
 /** Street-only queries (no comma) are ambiguous worldwide — e.g. "37 E Market St" → UK. */
 export function isAmbiguousDirectionsQuery(query) {
   const q = String(query || '').trim()

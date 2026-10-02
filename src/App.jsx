@@ -25,6 +25,7 @@ import {
   upsertNotificationPreferences,
 } from "./lib/supabase";
 import { isEventUpcoming } from "./lib/eventSchedule";
+import { dedupeEventsByLikelyDuplicate } from "./lib/eventDedupe";
 import { ThemeProvider, useTheme } from "./lib/ThemeContext";
 import MapView from "./components/MapView";
 import EventPanel from "./components/EventPanel";
@@ -699,11 +700,13 @@ function AppInner() {
     ? filtered.filter((e) => savedEventIds.includes(e.id))
     : filtered;
 
-  const statusFilteredEvents = showCanceled
-    ? baseEvents
-    : baseEvents.filter(
-        (e) => String(e.status || "active").toLowerCase() !== "canceled",
-      );
+  const statusFilteredEvents = dedupeEventsByLikelyDuplicate(
+    showCanceled
+      ? baseEvents
+      : baseEvents.filter(
+          (e) => String(e.status || "active").toLowerCase() !== "canceled",
+        ),
+  );
 
   const eventsForDisplay =
     nearMeOnly && nearMeCoords

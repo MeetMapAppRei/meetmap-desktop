@@ -62,6 +62,36 @@ function guessMediaTypeFromUrl(url) {
   return "image/jpeg";
 }
 
+function sniffImageMediaType(buf) {
+  if (!buf || buf.length < 4) return null;
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47)
+    return "image/png";
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return "image/gif";
+  if (
+    buf.length >= 12 &&
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 &&
+    buf[8] === 0x57 &&
+    buf[9] === 0x45 &&
+    buf[10] === 0x42 &&
+    buf[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return null;
+}
+
+function resolveImageMediaType(declared, buf) {
+  const sniffed = sniffImageMediaType(buf);
+  const declaredClean =
+    typeof declared === "string" && declared.startsWith("image/") ? declared : null;
+  const resolved = sniffed || declaredClean || "image/jpeg";
+  return { resolved, declared: declaredClean, sniffed };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -89,11 +119,13 @@ export default async function handler(req, res) {
 
     // If the client already uploaded the image bytes, use that directly.
     if (imageBase64) {
-      const mt =
+      const declared =
         typeof mediaTypeInput === "string" &&
         mediaTypeInput.startsWith("image/")
           ? mediaTypeInput
           : guessMediaTypeFromUrl(imageUrl);
+      const imgBuf = Buffer.from(String(imageBase64), "base64");
+      const { resolved: mt } = resolveImageMediaType(declared, imgBuf);
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -246,9 +278,11 @@ export default async function handler(req, res) {
 
       const contentTypeRaw = imgRes.headers.get("content-type") || "image/jpeg";
       const contentType = contentTypeRaw.split(";")[0].trim();
-      const mediaType = contentType.startsWith("image/")
+      const declared = contentType.startsWith("image/")
         ? contentType
         : "image/jpeg";
+      const imgBuf = Buffer.from(arrayBuffer);
+      const { resolved: mediaType } = resolveImageMediaType(declared, imgBuf);
 
       imageBlock = {
         type: "image",

@@ -1,4 +1,5 @@
+# Primary host: www (apex findcarmeets.com redirects here)
 User-agent: *
 Allow: /
 
-Sitemap: https://findcarmeets.com/sitemap.xml
+Sitemap: https://www.findcarmeets.com/sitemap.xml

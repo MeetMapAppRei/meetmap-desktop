@@ -152,6 +152,11 @@ export default function PostEventModal({ user, onClose, onPosted }) {
       // Treat flyer image as the event photo by default.
       setPhoto(file);
       setPhotoPreview(URL.createObjectURL(file));
+      const geocodeQuery = buildEventLocationQuery({
+        address: info.address || "",
+        location: info.location || "",
+        city: info.city || "",
+      });
       setForm((prev) => ({
         ...prev,
         title: info.title || prev.title,
@@ -167,13 +172,7 @@ export default function PostEventModal({ user, onClose, onPosted }) {
       }));
       setFlyerSuccess(true);
       if (info.address || info.location || info.city) {
-        const result = await geocodeAddress(
-          buildEventLocationQuery({
-            address: info.address || "",
-            location: info.location || "",
-            city: info.city || "",
-          }),
-        ).catch(() => null);
+        const result = await geocodeAddress(geocodeQuery).catch(() => null);
         if (result) {
           setCoords(result);
           setAddressStatus("found");

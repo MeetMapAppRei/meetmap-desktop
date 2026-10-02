@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { compressImageForUpload } from "./compressImageForUpload";
 import { apiUrl, apiUrlCandidates } from "./apiOrigin";
+import { eventsLikelyDuplicatePair } from "./eventDedupe";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -46,7 +47,7 @@ function normalizeEventType(raw, fallback = "meet") {
 }
 
 const DUPLICATE_EVENT_MESSAGE =
-  "An event with the same title, date, and city already exists. Please edit the existing event instead.";
+  "An event at the same place on this date already exists.";
 
 const mapCreateEventError = (error) => {
   const code = String(error?.code || "");
@@ -279,6 +280,20 @@ export const fetchEventScheduleByIds = async (eventIds) => {
 };
 
 export const createEvent = async (eventData, userId) => {
+  const dateKey = String(eventData?.date || "").slice(0, 10);
+  if (dateKey) {
+    const { data: sameDay } = await supabase
+      .from("events")
+      .select("id,title,date,city,address,location,lat,lng,photo_url")
+      .eq("date", dateKey)
+      .limit(500);
+    if (
+      (sameDay || []).some((row) => eventsLikelyDuplicatePair(row, eventData))
+    ) {
+      throw new Error(DUPLICATE_EVENT_MESSAGE);
+    }
+  }
+
   const { data, error } = await supabase
     .from("events")
     .insert([
@@ -565,7 +580,9 @@ async function uploadImageViaR2Presign(file, body) {
           reject(e);
         }
       };
-      reader.onerror = reject;
+      reader.onerror = () =>
+        reject(new Error("Failed to read image for upload"));
+      reader.onabort = () => reject(new Error("Image read was aborted"));
       reader.readAsDataURL(file);
     });
     const relayPayload = JSON.stringify({

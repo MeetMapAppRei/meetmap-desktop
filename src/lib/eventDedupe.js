@@ -1,68 +1,94 @@
 const norm = (value) =>
-  String(value ?? '')
+  String(value ?? "")
     .trim()
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+const dateKey = (d) => String(d ?? "").slice(0, 10);
+
+const datesEqual = (a, b) => dateKey(a) === dateKey(b);
+
+/** Street address or venue text. Short fragments like a state code are not a place. */
+function normPlace(value) {
+  return String(value ?? "")
     .toLowerCase()
+    .replace(/\b(united states|u\.s\.a\.?|usa)\b/g, " ")
+    .replace(/[.,#]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-const dateKey = (d) => String(d ?? '').slice(0, 10)
+function samePlaceText(left, right) {
+  const a = normPlace(left);
+  const b = normPlace(right);
+  return a.length >= 8 && a === b;
+}
 
-const datesEqual = (a, b) => dateKey(a) === dateKey(b)
+function sameAddressOrVenue(a, b) {
+  return (
+    samePlaceText(a.address, b.address) ||
+    samePlaceText(a.location, b.location) ||
+    samePlaceText(a.address, b.location) ||
+    samePlaceText(a.location, b.address)
+  );
+}
 
-const COORDS_CLOSE_KM = 0.35
+const COORDS_CLOSE_KM = 0.35;
 
 function coordsLikelySamePlace(lat1, lng1, lat2, lng2) {
-  if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return false
-  const R = 6371
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return false;
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const aa =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2
-  const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa))
-  return R * c < COORDS_CLOSE_KM
+      Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+  return R * c < COORDS_CLOSE_KM;
 }
 
 export function eventsLikelyDuplicatePair(a, b) {
-  if (!a || !b) return false
-  if (!datesEqual(a.date, b.date)) return false
-  if (norm(a.title) !== norm(b.title)) return false
-  if (norm(a.city) === norm(b.city)) return true
+  if (!a || !b) return false;
+  if (!datesEqual(a.date, b.date)) return false;
+  // Same date and the same street or venue is the same event, even when titles differ.
+  if (sameAddressOrVenue(a, b)) return true;
+  if (norm(a.title) !== norm(b.title)) return false;
+  if (norm(a.city) === norm(b.city)) return true;
 
   const cross = [
     [a.address, b.address],
     [a.location, b.location],
     [a.address, b.location],
     [a.location, b.address],
-  ]
+  ];
   for (const [x, y] of cross) {
-    const nx = norm(x)
-    const ny = norm(y)
-    if (nx && ny && nx === ny) return true
+    const nx = norm(x);
+    const ny = norm(y);
+    if (nx && ny && nx === ny) return true;
   }
 
-  const pa = String(a.photo_url || '').trim()
-  const pb = String(b.photo_url || '').trim()
-  if (pa && pb && pa === pb) return true
+  const pa = String(a.photo_url || "").trim();
+  const pb = String(b.photo_url || "").trim();
+  if (pa && pb && pa === pb) return true;
 
-  return coordsLikelySamePlace(a.lat, a.lng, b.lat, b.lng)
+  return coordsLikelySamePlace(a.lat, a.lng, b.lat, b.lng);
 }
 
 export function dedupeEventsByLikelyDuplicate(events) {
-  if (!Array.isArray(events) || events.length < 2) return events
-  const kept = []
+  if (!Array.isArray(events) || events.length < 2) return events;
+  const kept = [];
   for (const e of events) {
-    const i = kept.findIndex((k) => eventsLikelyDuplicatePair(k, e))
+    const i = kept.findIndex((k) => eventsLikelyDuplicatePair(k, e));
     if (i === -1) {
-      kept.push(e)
-      continue
+      kept.push(e);
+      continue;
     }
-    const cur = kept[i]
-    if (String(e.created_at || '') >= String(cur.created_at || '')) {
-      kept[i] = e
+    const cur = kept[i];
+    if (String(e.created_at || "") >= String(cur.created_at || "")) {
+      kept[i] = e;
     }
   }
-  return kept
+  return kept;
 }
-

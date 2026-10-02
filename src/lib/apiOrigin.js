@@ -15,7 +15,7 @@ export function getAuthRedirectUrl() {
   if (typeof window !== 'undefined' && /^https?:\/\//i.test(window.location?.origin || '')) {
     return window.location.origin
   }
-  return getAppOrigin() || 'https://findcarmeets.com'
+  return getAppOrigin() || 'https://www.findcarmeets.com'
 }
 
 /** @param {string} path e.g. `/api/storage-presign` */
@@ -32,12 +32,14 @@ export function apiUrl(path) {
 export function apiUrlCandidates(path) {
   const p = path.startsWith('/') ? path : `/${path}`
   const primary = apiUrl(p)
+  // Never use apex findcarmeets.com for POST — it 308-redirects to www and WebView fetch fails.
   const bases = [
     primary.startsWith('http') ? primary : null,
-    typeof window !== 'undefined' && primary.startsWith('/') ? `${window.location.origin}${primary}` : null,
-    'https://findcarmeets.com',
-    'https://www.findcarmeets.com',
-    'https://meetmap-gilt.vercel.app',
+    typeof window !== 'undefined' && primary.startsWith('/')
+      ? `${window.location.origin}${primary}`
+      : null,
+    `https://www.findcarmeets.com${p}`,
+    `https://meetmap-gilt.vercel.app${p}`,
   ].filter(Boolean)
   return [...new Set(bases)]
 }
