@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  BUY_DEVELOPER_COFFEE_URL,
+  shouldShowBuyDeveloperCoffee,
+} from "../lib/buyDeveloperCoffee";
 
 function MenuToggle({ label, active, onClick, isLight, panelBorder }) {
   return (
@@ -191,6 +195,19 @@ export default function HeaderOptionsMenu({
       >
         {alertsEnabled ? "Alert settings" : "Enable alerts"}
       </button>
+      {shouldShowBuyDeveloperCoffee() ? (
+        <button
+          type="button"
+          role="menuitem"
+          style={menuItemStyle}
+          onClick={() => {
+            setOpen(false);
+            window.open(BUY_DEVELOPER_COFFEE_URL, "_blank", "noopener,noreferrer");
+          }}
+        >
+          Buy the developer a coffee
+        </button>
+      ) : null}
 
       <div
         style={{ height: 1, background: panelBorder, margin: "6px 0 4px" }}
