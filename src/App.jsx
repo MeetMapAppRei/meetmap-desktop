@@ -42,6 +42,10 @@ import ModerationQueueModal from "./components/ModerationQueueModal";
 import FirstEventNudge from "./components/FirstEventNudge";
 import PlayStoreBanner from "./components/PlayStoreBanner";
 import HeaderOptionsMenu from "./components/HeaderOptionsMenu";
+import {
+  BUY_DEVELOPER_COFFEE_URL,
+  shouldShowBuyDeveloperCoffee,
+} from "./lib/buyDeveloperCoffee";
 import { geocodeAddress } from "./lib/geocode";
 import { buildEventLocationQuery } from "./lib/eventLocation";
 import AutoImportReviewModal from "./components/AutoImportReviewModal";
@@ -310,6 +314,7 @@ function AppInner() {
   const topBtnColor = isLight ? "#444" : "#555";
   const topBtnBg = isLight ? "#FFFFFF" : "none";
   const navBtnHeight = 36;
+  const showCoffee = shouldShowBuyDeveloperCoffee();
   const navBtnPaddingX = 12;
   const navBtnBorderRadius = 10;
   const filterChipBg = isLight ? "#F2F2F2" : "#1A1A1A";
@@ -1389,13 +1394,13 @@ function AppInner() {
       {/* TOP NAV — left brand, scrollable filters, pinned auth/post */}
       <nav
         style={{
-          height: isCompactNav ? 104 : 58,
+          height: showCoffee ? "auto" : isCompactNav ? 104 : 58,
           background: isLight ? "#FFFFFF" : "#0D0D0D",
           borderBottom: `1px solid ${isLight ? "#E5E5E5" : "#1A1A1A"}`,
           display: "flex",
           alignItems: "center",
           alignContent: "center",
-          padding: isCompactNav ? "8px 16px" : "0 16px",
+          padding: showCoffee || isCompactNav ? "8px 16px" : "0 16px",
           gap: isCompactNav ? "8px 12px" : 12,
           flexWrap: isCompactNav ? "wrap" : "nowrap",
           flexShrink: 0,
@@ -1820,7 +1825,7 @@ function AppInner() {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             gap: 8,
             flexShrink: 0,
             marginLeft: "auto",
@@ -1852,19 +1857,68 @@ function AppInner() {
             navBtnBorderRadius={navBtnBorderRadius}
           />
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div
+            <div
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                color: "#555",
+                whiteSpace: "nowrap",
+                paddingBottom: 8,
+              }}
+            >
+              👤{" "}
+              <span style={{ color: "#888" }}>
+                {user.user_metadata?.username || user.email?.split("@")[0]}
+              </span>
+            </div>
+          ) : null}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              gap: 6,
+            }}
+          >
+            {showCoffee ? (
+              <a
+                href={BUY_DEVELOPER_COFFEE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
+                  background: "transparent",
+                  border: "1px solid #FF6B35",
+                  color: "#FF6B35",
+                  borderRadius: navBtnBorderRadius,
+                  padding: `0 ${navBtnPaddingX}px`,
+                  height: navBtnHeight,
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12,
-                  color: "#555",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
-                👤{" "}
-                <span style={{ color: "#888" }}>
-                  {user.user_metadata?.username || user.email?.split("@")[0]}
-                </span>
-              </div>
+                Buy the developer a coffee
+              </a>
+            ) : null}
+          {user ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: 8,
+                width: "100%",
+              }}
+            >
               <button
                 onClick={() => setShowPost(true)}
                 style={{
@@ -1911,7 +1965,15 @@ function AppInner() {
               </button>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: 8,
+                width: "100%",
+              }}
+            >
               <button
                 onClick={() => setShowAuth(true)}
                 style={{
@@ -1981,6 +2043,7 @@ function AppInner() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </nav>
 
